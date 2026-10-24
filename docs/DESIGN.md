@@ -1,7 +1,7 @@
 # Relay AI Workflow Orchestrator — Design Document
 
 Status: Local-first design baseline
-Implementation choice: Java 21 + Spring Boot 3 + PostgreSQL + Maven, with a lightweight console in the same project or a minimal React + Vite UI if needed for demos. The backend remains the source of truth; the console is only a thin presentation layer.
+Implementation choice: Java 25 + Spring Boot 4.1.2 + PostgreSQL 18.6 + Maven 3.10, with a lightweight console in the same project or a minimal React + Vite UI if needed for demos. The backend remains the source of truth; the console is only a thin presentation layer.
 Scope sources: `docs/RELAY_PROBLEM_STATEMENT.md`, `docs/API_CONTRACT.md`, `docs/DATA_MODEL.md`, `docs/IMPLEMENTATION_GUIDE.md`, `data/node_catalog.json`, `data/seed_workflows.json`, `data/sample_payloads.jsonl`, and the supplied Python verification scripts.
 
 ## 1. Purpose and scope

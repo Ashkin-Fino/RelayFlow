@@ -1,9 +1,9 @@
 # Relay AI Workflow Orchestrator — Implementation Plan
 
 Status: Local-first execution plan
-Primary stack: Java 21 + Spring Boot 3 + PostgreSQL + Maven
+Primary stack: Java 25 + Spring Boot 4.1.2 + PostgreSQL 18.6 + Maven 3.10
 Frontend: small console app, either server-rendered Thymeleaf or a lightweight React + Vite interface if the team wants a modern UI. The backend remains the source of truth.
-Objective: Deliver a working Relay platform against the supplied problem statement, seed workflows, node catalog, and Python verification scripts. The plan explicitly treats `docs/API_CONTRACT.md`, `docs/DATA_MODEL.md`, `data/node_catalog.json`, `data/seed_workflows.json`, `scripts/smoke_test.py`, and `scripts/duplication_check.py` as the source of truth.
+Objective: Deliver a working Relay platform against the supplied problem statement, seed workflows, node catalog, and Python verification scripts. The plan explicitly treats `docs/API_CONTRACT.md`, `docs/DATA_MODEL.md`, `data/node_catalog.json`, `data/seed_workflows.json`, `scripts/smoke_test.py`, `scripts/duplication_check.py` and `docs/DESIGN.md` as the source of truth.
 
 ## 1. Implementation goals
 
