@@ -31,7 +31,7 @@ public class DeterministicNodeExecutor {
 		return switch (nodeType) {
 			case "condition" -> executeCondition(node, params);
 			case "delay" -> executeDelay(node, params);
-			case "notify" -> executeNotify(runId, sequence, nodeId, params);
+			case "notify" -> executeNotify(runId, sequence, node, nodeId, params);
 			case "http_request" -> executeHttpRequest(runId, sequence, node, nodeId, params);
 			default -> throw new IllegalStateException("Node type '" + nodeType + "' is not implemented by this worker");
 		};
@@ -73,7 +73,8 @@ public class DeterministicNodeExecutor {
 		return new NodeExecutionResult(objectMapper.createObjectNode(), next, seconds);
 	}
 
-	private NodeExecutionResult executeNotify(String runId, int sequence, String nodeId, JsonNode params) {
+	private NodeExecutionResult executeNotify(String runId, int sequence, JsonNode node,
+			String nodeId, JsonNode params) {
 		String channel = params.path("channel").asString();
 		ObjectNode body = objectMapper.createObjectNode();
 		String path;
@@ -92,7 +93,8 @@ public class DeterministicNodeExecutor {
 		body.set("message", params.path("message").deepCopy());
 		JsonNode response = send("POST", mockWorldUrl.resolve(path), body,
 				runId + ":" + nodeId + ":" + sequence);
-		return NodeExecutionResult.next(response.path("body"), null);
+		String next = node.path("next").isNull() ? null : node.path("next").asString();
+		return NodeExecutionResult.next(response.path("body"), next);
 	}
 
 	private NodeExecutionResult executeHttpRequest(String runId, int sequence, JsonNode node, String nodeId, JsonNode params) {
