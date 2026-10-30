@@ -1,0 +1,22 @@
+{
+  "id": "wf_test_invalid_node",
+  "name": "Test Invalid Node",
+  "description": "Workflow with an unsupported node type",
+  "trigger": {
+    "type": "manual"
+  },
+  "entry": "start",
+  "limits": {
+    "max_steps": 5,
+    "timeout_seconds": 60,
+    "max_ai_tokens": 0
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "teleport",
+      "params": {},
+      "next": null
+    }
+  ]
+}
