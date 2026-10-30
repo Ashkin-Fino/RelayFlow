@@ -31,7 +31,8 @@ public class RunProgressService {
 	}
 
 	@Transactional
-	public void completeStep(String runId, long jobId, StepEntity step, String nextNodeId, long delaySeconds) {
+	public void completeStep(String runId, long jobId, String leaseToken, StepEntity step,
+			String nextNodeId, long delaySeconds) {
 		RunEntity run = runRepository.findById(runId).orElseThrow(() -> new RunNotFoundException(runId));
 		stepRepository.save(step);
 		run.advance(nextNodeId);
@@ -40,26 +41,26 @@ public class RunProgressService {
 		}
 		runRepository.save(run);
 		if (run.getStatus().equals("succeeded")) {
-			queueJobRepository.complete(jobId, null);
+			queueJobRepository.complete(jobId, leaseToken, null);
 		} else if (delaySeconds > 0) {
-			queueJobRepository.reschedule(jobId, delaySeconds);
+			queueJobRepository.reschedule(jobId, leaseToken, delaySeconds);
 		}
 	}
 
 	@Transactional
-	public void failStep(String runId, long jobId, StepEntity step, JsonNode error) {
+	public void failStep(String runId, long jobId, String leaseToken, StepEntity step, JsonNode error) {
 		RunEntity run = runRepository.findById(runId).orElseThrow(() -> new RunNotFoundException(runId));
 		stepRepository.save(step);
 		run.fail(error);
 		runRepository.save(run);
-		queueJobRepository.complete(jobId, error.path("message").asString());
+		queueJobRepository.complete(jobId, leaseToken, error.path("message").asString());
 	}
 
 	@Transactional
-	public void failRun(String runId, long jobId, JsonNode error) {
+	public void failRun(String runId, long jobId, String leaseToken, JsonNode error) {
 		RunEntity run = runRepository.findById(runId).orElseThrow(() -> new RunNotFoundException(runId));
 		run.fail(error);
 		runRepository.save(run);
-		queueJobRepository.complete(jobId, error.path("message").asString());
+		queueJobRepository.complete(jobId, leaseToken, error.path("message").asString());
 	}
 }
