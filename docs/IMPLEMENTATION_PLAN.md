@@ -81,7 +81,7 @@ Core delivery targets:
 - Ensure startup is repeatable and does not create duplicate seed rows.
 
 ### Phase 2 — workflow definition lifecycle
-- Implement `POST /workflows`, `GET /workflows`, `GET /workflows/{id}`.
+- Implement `POST /workflows`, `GET /workflows`, and `POST /workflows/{workflowId}/publish`.
 - Validate the canonical shape and publish flow.
 - Enforce rules from the catalog:
   - node type exists
