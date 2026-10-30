@@ -61,6 +61,6 @@ build/
 .vscode/
 
 # Environment variables and secrets
-.env
+*.env
 .env.*
 !.env.example
