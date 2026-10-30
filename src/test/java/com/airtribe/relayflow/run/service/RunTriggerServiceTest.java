@@ -1,8 +1,15 @@
 package com.airtribe.relayflow.run.service;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import org.mockito.Mockito;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -14,11 +21,7 @@ import com.airtribe.relayflow.run.repository.QueueJobRepository;
 import com.airtribe.relayflow.run.repository.RunRepository;
 import com.airtribe.relayflow.workflow.entity.WorkflowEntity;
 import com.airtribe.relayflow.workflow.repository.WorkflowRepository;
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -44,7 +47,7 @@ class RunTriggerServiceTest {
 
 		assertEquals("run_".length() + 32, response.runId().length());
 		ArgumentCaptor<RunEntity> runCaptor = ArgumentCaptor.forClass(RunEntity.class);
-		verify(runRepository).save(runCaptor.capture());
+		verify(runRepository).saveAndFlush(runCaptor.capture());
 		assertEquals("manual", runCaptor.getValue().getTriggerType());
 		assertEquals("maya@example.com", runCaptor.getValue().getTriggerInput().path("customer_email").asString());
 		verify(queueJobRepository).enqueue(response.runId());
@@ -68,11 +71,11 @@ class RunTriggerServiceTest {
 		var response = runTriggerService.triggerWebhook("wf_trigger_test", "expected", body);
 
 		ArgumentCaptor<RunEntity> runCaptor = ArgumentCaptor.forClass(RunEntity.class);
-		verify(runRepository).save(runCaptor.capture());
+		verify(runRepository).saveAndFlush(runCaptor.capture());
 		assertEquals("webhook", runCaptor.getValue().getTriggerType());
 		assertEquals("ord_1", runCaptor.getValue().getTriggerInput().path("order_id").asString());
 		verify(queueJobRepository).enqueue(response.runId());
-		verify(queueJobRepository, never()).complete(any(Long.class), any());
+		verify(queueJobRepository, never()).complete(anyLong(), anyString(), anyString());
 	}
 
 	private WorkflowEntity workflow(String triggerType, String secret) {
