@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.run.execution;
+package com.airtribe.relayflow.execution.executor;
 
 import java.io.IOException;
 import java.net.URI;
@@ -101,7 +101,7 @@ public class DeterministicNodeExecutor {
 		String method = params.path("method").asString();
 		URI uri = URI.create(params.path("url").asString());
 		JsonNode body = params.path("body");
-		String idempotencyKey = method.equals("GET") ? null : runId + ":" + nodeId + ":" + sequence;
+		String idempotencyKey = runId + ":" + nodeId + ":" + sequence;
 		JsonNode response = send(method, uri, body.isMissingNode() || body.isNull()
 				? objectMapper.createObjectNode() : body, idempotencyKey);
 		String next = node.path("next").isNull() ? null : node.path("next").asString();

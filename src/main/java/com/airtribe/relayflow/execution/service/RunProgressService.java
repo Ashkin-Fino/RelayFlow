@@ -1,10 +1,10 @@
-package com.airtribe.relayflow.run.service;
+package com.airtribe.relayflow.execution.service;
 
-import com.airtribe.relayflow.run.entity.RunEntity;
-import com.airtribe.relayflow.run.entity.StepEntity;
-import com.airtribe.relayflow.run.repository.QueueJobRepository;
-import com.airtribe.relayflow.run.repository.RunRepository;
-import com.airtribe.relayflow.run.repository.StepRepository;
+import com.airtribe.relayflow.execution.entity.RunEntity;
+import com.airtribe.relayflow.execution.entity.StepEntity;
+import com.airtribe.relayflow.execution.repository.QueueJobRepository;
+import com.airtribe.relayflow.execution.repository.RunRepository;
+import com.airtribe.relayflow.execution.repository.StepRepository;
 import com.airtribe.relayflow.run.exceptions.RunNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +42,8 @@ public class RunProgressService {
 		runRepository.save(run);
 		if (run.getStatus().equals("succeeded")) {
 			queueJobRepository.complete(jobId, leaseToken, null);
-		} else if (delaySeconds > 0) {
+		} else {
+			// Release after every node; zero makes the next node immediately eligible.
 			queueJobRepository.reschedule(jobId, leaseToken, delaySeconds);
 		}
 	}

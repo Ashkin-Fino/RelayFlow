@@ -15,10 +15,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.airtribe.relayflow.run.entity.RunEntity;
+import com.airtribe.relayflow.execution.entity.RunEntity;
 import com.airtribe.relayflow.run.exceptions.WebhookUnauthorizedException;
-import com.airtribe.relayflow.run.repository.QueueJobRepository;
-import com.airtribe.relayflow.run.repository.RunRepository;
+import com.airtribe.relayflow.execution.repository.QueueJobRepository;
+import com.airtribe.relayflow.execution.repository.RunRepository;
 import com.airtribe.relayflow.workflow.entity.WorkflowEntity;
 import com.airtribe.relayflow.workflow.repository.WorkflowRepository;
 

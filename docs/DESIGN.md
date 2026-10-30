@@ -340,50 +340,56 @@ Catalog metadata (`required`, `enum`, `templatable`, `side_effect`, `requires_ap
 
 ### Java package layout
 
-The Maven project lives at the repository root; there is no nested `app/` directory. Organize current code by feature and keep persistence details under the feature that owns them. Packages marked future are added with their implementation phase.
+Keep `run/` limited to the trigger HTTP API and its request/response, service, and trigger-specific exception classes. Durable run/step state and execution support belong in the separate `execution/` package. Queue polling and process orchestration belong in `worker/`; node execution adapters live under `execution/executor/`.
 
 ```text
 src/main/java/com/airtribe/relayflow/
-  auth/                 # demo-token filter; webhook auth added with triggers
-  catalog/              # catalog loader shared by validation and runtime
-  config/               # typed application configuration
-  seed/                 # repeatable startup seed loader
-  exception/            # global exception handler
-    GlobalExceptionHandler.java
-  workflow/             # workflow feature boundary
-    WorkflowController.java
-    dto/                 # immutable API response records
-    entity/              # WorkflowEntity (JPA mapping)
-    repository/          # WorkflowRepository (Spring Data JPA)
-    service/             # WorkflowService and WorkflowDefinitionValidator
-    exceptions/          # domain exceptions and API exception advice
-  run/                  # future run API, run/step persistence and trace DTOs
-  approval/              # future approval decisions and gate queries
-  nodes/                 # future node handlers
-  worker/                # future queue polling, leases and recovery
-  ai/                    # future provider adapter, schema validation and usage
-  mockworld/             # future external mock-world HTTP client
-  console/               # future page/controllers if server-rendered UI is used
+  auth/                  # demo-token filter
+  catalog/               # catalog loader shared by validation and runtime
+  config/                # typed application configuration
+  seed/                  # repeatable startup seed loader
+  exception/             # global exception handler
+  workflow/              # workflow API, entity, repository, validation and service
+  run/                   # trigger API only
+    RunTriggerController.java
+    dto/                  # trigger response DTOs
+    service/              # RunTriggerService
+    exceptions/           # trigger-specific exceptions
+  execution/              # durable execution state and support
+    entity/               # RunEntity, StepEntity
+    repository/           # RunRepository, StepRepository, QueueJobRepository
+    service/               # RunProgressService
+    executor/              # DeterministicNodeExecutor, NodeExecutionResult, TemplateResolver
+  worker/                  # QueueWorker and WorkerExecutionService
+  approval/                # future approval decisions and gate queries
+  ai/                      # future provider adapter, schema validation and usage
+  mockworld/               # future mock-world HTTP client
 src/main/resources/
   application.properties
-  db/migration/ # Flyway
-  templates/
-  static/
-src/test/java/com/airtribe/relayflow/ # tests mirror production packages, including workflow/dto and workflow/service
-data/            # original canonical starter data
-scripts/         # original Python support and verification scripts
+  db/migration/            # Flyway migrations
+src/test/java/com/airtribe/relayflow/ # tests mirror production package boundaries
+data/                      # canonical starter data
+scripts/                   # original Python support and verification scripts
 docs/DESIGN.md
+dev_report/                # phase implementation reports
 ```
 
-### Local processes
+### Worker runtime and local processes
+
+The API and worker are two modes of the same Spring Boot application/JAR and share PostgreSQL configuration. The worker claims one queue job, executes one node, persists the step and next-node pointer, then releases the job immediately or schedules it for a durable delay. This short-claim/one-node model avoids holding a lease while a workflow is waiting and resumes from `runs.current_node_id` after a restart.
+
+- Combined local mode (default): worker polling is enabled in the API process.
+- API-only mode: set `RELAY_WORKER_ENABLED=false`.
+- Worker-only mode: start the same application with `--spring.main.web-application-type=none`.
+- Poll interval defaults to 1 second; lease duration defaults to 60 seconds.
+
+Local processes:
 1. PostgreSQL service.
 2. Mock world: `python scripts/mock_world.py --port 9210`.
-3. Spring Boot API.
-4. Spring Boot worker.
-5. Acceptance scripts.
+3. Spring Boot API and/or worker process.
+4. Acceptance scripts.
 
-API and worker use the same database/config. No AWS resource is required for local development. Use fake model provider for deterministic tests and a real provider only for AI demos.
-
+No AWS resource is required for local development. The original Python mock world and verification scripts remain unchanged.
 ## 9. Verification plan
 
 ### Gate A — API and validation
