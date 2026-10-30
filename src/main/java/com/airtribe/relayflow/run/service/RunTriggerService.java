@@ -87,7 +87,10 @@ public class RunTriggerService {
 		String entry = workflow.getDefinition().path("entry").asString();
 		RunEntity run = new RunEntity(runId, workflow.getId(), workflow.getDefinition().deepCopy(),
 				triggerType, input.deepCopy(), entry);
-		runRepository.save(run);
+
+		// Flush the parent row before JdbcTemplate inserts the FK-dependent queue row.
+		// Both operations remain in this transaction, so either both commit or neither does.
+		runRepository.saveAndFlush(run);
 		queueJobRepository.enqueue(runId);
 		return new RunAcceptedResponse(runId);
 	}
