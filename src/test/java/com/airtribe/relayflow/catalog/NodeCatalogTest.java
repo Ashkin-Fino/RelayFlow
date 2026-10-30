@@ -14,13 +14,16 @@ class NodeCatalogTest {
 
 		assertEquals(7, catalog.path("nodes").size());
 		assertEquals(3, catalog.path("triggers").size());
-		boolean containsOrderAction = false;
+		assertTrue(containsNodeType(catalog, "approval"), "Catalog should include the approval node");
+		assertTrue(containsNodeType(catalog, "order_action"), "Catalog should include the sensitive action node");
+	}
+
+	private boolean containsNodeType(JsonNode catalog, String expectedType) {
 		for (JsonNode node : catalog.path("nodes")) {
-			if ("order_action".equals(node.path("type").asString())) {
-				containsOrderAction = true;
-				break;
+			if (expectedType.equals(node.path("type").asString())) {
+				return true;
 			}
 		}
-		assertTrue(containsOrderAction);
+		return false;
 	}
 }
