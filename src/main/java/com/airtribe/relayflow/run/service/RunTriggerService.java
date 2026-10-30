@@ -1,13 +1,13 @@
 package com.airtribe.relayflow.run.service;
 
 import com.airtribe.relayflow.run.dto.RunAcceptedResponse;
-import com.airtribe.relayflow.run.entity.RunEntity;
+import com.airtribe.relayflow.execution.entity.RunEntity;
 import com.airtribe.relayflow.run.exceptions.InvalidTriggerTypeException;
 import com.airtribe.relayflow.run.exceptions.InvalidTriggerInputException;
 import com.airtribe.relayflow.run.exceptions.WebhookUnauthorizedException;
 import com.airtribe.relayflow.run.exceptions.WorkflowNotPublishedException;
-import com.airtribe.relayflow.run.repository.QueueJobRepository;
-import com.airtribe.relayflow.run.repository.RunRepository;
+import com.airtribe.relayflow.execution.repository.QueueJobRepository;
+import com.airtribe.relayflow.execution.repository.RunRepository;
 import com.airtribe.relayflow.workflow.entity.WorkflowEntity;
 import com.airtribe.relayflow.workflow.exceptions.WorkflowNotFoundException;
 import com.airtribe.relayflow.workflow.repository.WorkflowRepository;

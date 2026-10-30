@@ -1,6 +1,6 @@
-package com.airtribe.relayflow.run.repository;
+package com.airtribe.relayflow.execution.repository;
 
-import com.airtribe.relayflow.run.entity.StepEntity;
+import com.airtribe.relayflow.execution.entity.StepEntity;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
