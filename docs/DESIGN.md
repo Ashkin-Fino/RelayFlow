@@ -348,6 +348,8 @@ src/main/java/com/airtribe/relayflow/
   catalog/              # catalog loader shared by validation and runtime
   config/               # typed application configuration
   seed/                 # repeatable startup seed loader
+  exception/            # global exception handler
+    GlobalExceptionHandler.java
   workflow/             # workflow feature boundary
     WorkflowController.java
     dto/                 # immutable API response records

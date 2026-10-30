@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.workflow.exceptions;
+package com.airtribe.relayflow.exception;
 
 import java.util.Map;
 
@@ -12,9 +12,12 @@ import com.airtribe.relayflow.run.exceptions.InvalidTriggerInputException;
 import com.airtribe.relayflow.run.exceptions.InvalidTriggerTypeException;
 import com.airtribe.relayflow.run.exceptions.WebhookUnauthorizedException;
 import com.airtribe.relayflow.run.exceptions.WorkflowNotPublishedException;
+import com.airtribe.relayflow.workflow.exceptions.WorkflowConflictException;
+import com.airtribe.relayflow.workflow.exceptions.WorkflowDefinitionException;
+import com.airtribe.relayflow.workflow.exceptions.WorkflowNotFoundException;
 
 @RestControllerAdvice
-public class WorkflowApiExceptionHandler {
+public class GlobalExceptionHandler {
 	@ExceptionHandler(WorkflowDefinitionException.class)
 	public ResponseEntity<Map<String, Object>> invalidDefinition(WorkflowDefinitionException exception) {
 		return error(HttpStatus.UNPROCESSABLE_CONTENT, exception.getMessage(), exception.code());
