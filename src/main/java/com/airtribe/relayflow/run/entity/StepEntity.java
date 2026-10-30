@@ -1,16 +1,18 @@
 package com.airtribe.relayflow.run.entity;
 
 import java.time.Instant;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import tools.jackson.databind.JsonNode;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import tools.jackson.databind.JsonNode;
 
 @Entity
 @Table(name = "steps")
@@ -76,10 +78,21 @@ public class StepEntity {
 		this.status = "running";
 	}
 
-	public String getNodeId() { return nodeId; }
-	public String getRunId() { return runId; }
-	public JsonNode getOutput() { return output; }
-	public String getStatus() { return status; }
+	public String getNodeId() {
+        return nodeId; 
+    }
+
+	public String getRunId() { 
+        return runId; 
+    }
+
+	public JsonNode getOutput() { 
+        return output; 
+    }
+
+	public String getStatus() { 
+        return status; 
+    }
 
 	public void succeed(JsonNode output, long durationMs) {
 		this.output = output;

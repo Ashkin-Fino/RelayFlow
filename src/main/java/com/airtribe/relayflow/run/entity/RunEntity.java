@@ -1,15 +1,17 @@
 package com.airtribe.relayflow.run.entity;
 
 import java.time.Instant;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
-import tools.jackson.databind.JsonNode;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import tools.jackson.databind.JsonNode;
 
 @Entity
 @Table(name = "runs")
@@ -82,18 +84,53 @@ public class RunEntity {
 		this.cancelRequested = false;
 	}
 
-	public String getId() { return id; }
-	public String getWorkflowId() { return workflowId; }
-	public JsonNode getDefinitionSnapshot() { return definitionSnapshot; }
-	public String getStatus() { return status; }
-	public String getTriggerType() { return triggerType; }
-	public JsonNode getTriggerInput() { return triggerInput; }
-	public String getCurrentNodeId() { return currentNodeId; }
-	public int getStepsExecuted() { return stepsExecuted; }
-	public boolean isCancelRequested() { return cancelRequested; }
-	public Instant getStartedAt() { return startedAt; }
-	public Instant getFinishedAt() { return finishedAt; }
-	public Instant getCreatedAt() { return createdAt; }
+	public String getId() { 
+        return id; 
+    }
+
+	public String getWorkflowId() { 
+        return workflowId;
+    }
+
+	public JsonNode getDefinitionSnapshot() { 
+        return definitionSnapshot; 
+    }
+
+	public String getStatus() { 
+        return status; 
+    }
+
+	public String getTriggerType() { 
+        return triggerType; 
+    }
+
+	public JsonNode getTriggerInput() { 
+        return triggerInput; 
+    }
+
+	public String getCurrentNodeId() { 
+        return currentNodeId; 
+    }
+
+	public int getStepsExecuted() { 
+        return stepsExecuted; 
+    }
+
+	public boolean isCancelRequested() { 
+        return cancelRequested; 
+    }
+
+	public Instant getStartedAt() { 
+        return startedAt; 
+    }
+
+	public Instant getFinishedAt() { 
+        return finishedAt; 
+    }
+
+	public Instant getCreatedAt() { 
+        return createdAt; 
+    }
 
 	public void start() {
 		this.status = "running";

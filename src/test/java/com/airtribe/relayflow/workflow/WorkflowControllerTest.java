@@ -16,9 +16,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.airtribe.relayflow.auth.DemoTokenFilter;
+import com.airtribe.relayflow.exception.GlobalExceptionHandler;
 import com.airtribe.relayflow.workflow.dto.WorkflowStatusResponse;
 import com.airtribe.relayflow.workflow.dto.WorkflowSummary;
-import com.airtribe.relayflow.workflow.exceptions.WorkflowApiExceptionHandler;
 import com.airtribe.relayflow.workflow.exceptions.WorkflowDefinitionException;
 import com.airtribe.relayflow.workflow.service.WorkflowService;
 
@@ -33,7 +33,7 @@ class WorkflowControllerTest {
 	void setUp() {
 		mockMvc = MockMvcBuilders.standaloneSetup(new WorkflowController(workflowService))
 				.addFilters(new DemoTokenFilter(DEMO_TOKEN))
-				.setControllerAdvice(new WorkflowApiExceptionHandler())
+				.setControllerAdvice(new GlobalExceptionHandler())
 				.build();
 	}
 
