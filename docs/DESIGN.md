@@ -49,6 +49,8 @@ PostgreSQL is the source of truth for every stateful domain object:
 
 The database is also the queue backing store. Each job is durable and recoverable; a dead worker leaves jobs available for recovery via lease expiry or heartbeat.
 
+Workflow definitions use Spring Data JPA entities and repositories, with `workflow.service.WorkflowService` owning create/list/publish use cases. The workflow entity and repository live in `workflow.entity` and `workflow.repository`; API/domain errors live in `workflow.exceptions`. Keep persistence classes inside the owning feature package rather than placing all domain persistence in a global bucket. Queue claiming may use a narrowly scoped JDBC adapter later where PostgreSQL locking features such as `FOR UPDATE SKIP LOCKED` are needed.
+
 ### 2.3 Seed and validation principles
 
 At startup the service loads `data/node_catalog.json` and `data/seed_workflows.json` and ensures the seed workflows are present and Published.
@@ -336,25 +338,36 @@ Keep these files/scripts intact and use them as the source of truth:
 
 Catalog metadata (`required`, `enum`, `templatable`, `side_effect`, `requires_approval`) must drive validation and runtime safety; avoid a second manually maintained catalog.
 
-### Suggested Java package layout
+### Java package layout
+
+The Maven project lives at the repository root; there is no nested `app/` directory. Organize current code by feature and keep persistence details under the feature that owns them. Packages marked future are added with their implementation phase.
+
 ```text
-app/src/main/java/.../
-  api/          # controllers and DTOs
-  auth/         # demo token and webhook secret
-  workflow/     # CRUD, publish service, catalog validator
-  engine/       # graph execution, state machine, template resolver
-  nodes/        # one handler per node type
-  worker/       # queue polling, leases, recovery
-  approval/     # decisions and approval gate
-  ai/           # provider adapter and schema validation
-  mockworld/    # HTTP client, idempotency headers
-  persistence/  # JPA entities, repositories, JDBC queue operations
-  config/       # properties, seed loader
-  console/      # page controllers
-app/src/main/resources/
+src/main/java/com/airtribe/relayflow/
+  auth/                 # demo-token filter; webhook auth added with triggers
+  catalog/              # catalog loader shared by validation and runtime
+  config/               # typed application configuration
+  seed/                 # repeatable startup seed loader
+  workflow/             # workflow feature boundary
+    WorkflowController.java
+    dto/                 # immutable API response records
+    entity/              # WorkflowEntity (JPA mapping)
+    repository/          # WorkflowRepository (Spring Data JPA)
+    service/             # WorkflowService and WorkflowDefinitionValidator
+    exceptions/          # domain exceptions and API exception advice
+  run/                  # future run API, run/step persistence and trace DTOs
+  approval/              # future approval decisions and gate queries
+  nodes/                 # future node handlers
+  worker/                # future queue polling, leases and recovery
+  ai/                    # future provider adapter, schema validation and usage
+  mockworld/             # future external mock-world HTTP client
+  console/               # future page/controllers if server-rendered UI is used
+src/main/resources/
+  application.properties
   db/migration/ # Flyway
   templates/
   static/
+src/test/java/com/airtribe/relayflow/ # tests mirror production packages, including workflow/dto and workflow/service
 data/            # original canonical starter data
 scripts/         # original Python support and verification scripts
 docs/DESIGN.md

@@ -56,6 +56,16 @@ python scripts/mock_provider.py --port 9001 --name alpha
 
 Spring Boot health is available at `http://localhost:8080/actuator/health`.
 
+### Workflow authoring API
+
+The Phase 2 endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
+
+- `GET /workflows` lists workflow `id`, `name`, and `status`.
+- `POST /workflows` accepts the canonical workflow JSON definition, validates it against the node catalog, and creates a Draft.
+- `POST /workflows/{workflowId}/publish` validates the stored definition and publishes it.
+
+Definitions are validated for catalog node types, required parameters, parameter types/enums, trigger configuration, `limits.max_steps`, entry-node existence, and outgoing node pointers. Backward pointers are allowed. Invalid definitions return a structured 4xx error; missing/invalid bearer tokens return 401. The workflow-detail route is not part of this implemented API surface.
+
 ### Current implementation status
 
-The project currently has the Phase 1 persistence/configuration foundation and application bootstrap. AI provider settings are bound, but the AI adapter itself is not implemented. Workflow APIs, validators, execution engine, worker, and console are still planned work; the API smoke test will not pass until those endpoints and worker behavior are implemented.
+Phase 1 persistence/configuration and Phase 2 workflow list/create/publish with catalog validation and demo-token authentication are implemented. AI provider settings are bound, but the AI adapter itself is not implemented. Trigger routes, execution engine, worker, and console remain planned work; the full API smoke test is not expected to pass until those features are implemented.
