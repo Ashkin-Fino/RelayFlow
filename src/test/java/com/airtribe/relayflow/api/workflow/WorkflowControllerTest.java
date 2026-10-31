@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.workflow;
+package com.airtribe.relayflow.api.workflow;
 
 import java.util.List;
 
@@ -15,12 +15,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowSummary;
+import com.airtribe.relayflow.api.workflow.service.WorkflowService;
 import com.airtribe.relayflow.auth.DemoTokenFilter;
 import com.airtribe.relayflow.common.exception.GlobalExceptionHandler;
 import com.airtribe.relayflow.common.exception.WorkflowDefinitionException;
-import com.airtribe.relayflow.workflow.dto.WorkflowStatusResponse;
-import com.airtribe.relayflow.workflow.dto.WorkflowSummary;
-import com.airtribe.relayflow.workflow.service.WorkflowService;
 
 import tools.jackson.databind.JsonNode;
 

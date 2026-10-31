@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.run.dto;
+package com.airtribe.relayflow.api.run.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

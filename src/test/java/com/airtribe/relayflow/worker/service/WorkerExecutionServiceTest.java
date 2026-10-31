@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.worker;
+package com.airtribe.relayflow.worker.service;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,8 +20,6 @@ import com.airtribe.relayflow.worker.dto.ClaimedQueueJob;
 import com.airtribe.relayflow.worker.excutor.DeterministicNodeExecutor;
 import com.airtribe.relayflow.worker.excutor.NodeExecutionResult;
 import com.airtribe.relayflow.worker.excutor.TemplateResolver;
-import com.airtribe.relayflow.worker.service.RunProgressService;
-import com.airtribe.relayflow.worker.service.WorkerExecutionService;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;

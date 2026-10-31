@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.run;
+package com.airtribe.relayflow.api.run;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.airtribe.relayflow.run.dto.RunAcceptedResponse;
-import com.airtribe.relayflow.run.service.RunTriggerService;
+import com.airtribe.relayflow.api.run.dto.RunAcceptedResponse;
+import com.airtribe.relayflow.api.run.service.RunTriggerService;
 
 import tools.jackson.databind.JsonNode;
 

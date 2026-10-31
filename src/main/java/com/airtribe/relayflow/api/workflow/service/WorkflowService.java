@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.workflow.service;
+package com.airtribe.relayflow.api.workflow.service;
 
 import java.util.List;
 
@@ -7,12 +7,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowSummary;
 import com.airtribe.relayflow.common.entity.WorkflowEntity;
 import com.airtribe.relayflow.common.exception.WorkflowConflictException;
 import com.airtribe.relayflow.common.exception.WorkflowNotFoundException;
 import com.airtribe.relayflow.common.repository.WorkflowRepository;
-import com.airtribe.relayflow.workflow.dto.WorkflowStatusResponse;
-import com.airtribe.relayflow.workflow.dto.WorkflowSummary;
 
 import tools.jackson.databind.JsonNode;
 

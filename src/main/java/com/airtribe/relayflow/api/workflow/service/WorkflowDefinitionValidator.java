@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.workflow.service;
+package com.airtribe.relayflow.api.workflow.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;

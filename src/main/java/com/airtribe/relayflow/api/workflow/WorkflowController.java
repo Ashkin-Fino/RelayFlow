@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.workflow;
+package com.airtribe.relayflow.api.workflow;
 
 import java.util.List;
 
@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.airtribe.relayflow.workflow.dto.WorkflowStatusResponse;
-import com.airtribe.relayflow.workflow.dto.WorkflowSummary;
-import com.airtribe.relayflow.workflow.service.WorkflowService;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowSummary;
+import com.airtribe.relayflow.api.workflow.service.WorkflowService;
 
 import tools.jackson.databind.JsonNode;
 
