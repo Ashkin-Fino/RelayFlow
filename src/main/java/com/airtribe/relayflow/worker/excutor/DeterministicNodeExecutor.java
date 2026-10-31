@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import com.airtribe.relayflow.worker.dto.NodeExecutionResult;
 import com.airtribe.relayflow.worker.exception.NodeExecutionException;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -173,7 +174,7 @@ public class DeterministicNodeExecutor {
 		String serializedBody;
 		try {
 			serializedBody = objectMapper.writeValueAsString(body);
-		} catch (IOException exception) {
+		} catch (JacksonException exception) {
 			throw new NodeExecutionException("Unable to encode HTTP node request", false, null, exception);
 		}
 

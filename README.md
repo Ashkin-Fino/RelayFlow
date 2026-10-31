@@ -53,7 +53,7 @@ Spring Boot health is available at `http://localhost:8080/actuator/health`.
 
 ### Workflow authoring API
 
-The Phase 2 endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
+These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 - `GET /workflows` lists workflow `id`, `name`, and `status`.
 - `POST /workflows` accepts the canonical workflow JSON definition, validates it against the node catalog, and creates a Draft.
@@ -61,9 +61,18 @@ The Phase 2 endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 Definitions are validated for catalog node types, required parameters, parameter types/enums, trigger configuration, `limits.max_steps`, entry-node existence, and outgoing node pointers. Backward pointers are allowed. Invalid definitions return a structured 4xx error; missing/invalid bearer tokens return 401. The workflow-detail route is not part of this implemented API surface.
 
+### Worklfow Triggering API
+
+These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
+
+- `POST /workflows/{workflowId}/trigger` triggers a published workflow which support manual trigger
+- `POST /hooks/{workflowId}` triggers a published which supports webhook trigger. Also requires a `X-Relay-Secret` header.
+
 ### Current implementation status
 
-Phases 1 and 2 are implemented. Phase 3 manual/webhook trigger, PostgreSQL queue, worker execution, durable delay, and max_steps enforcement are implemented and the local scenarios are documented in `dev_report/phase_3.md`. Phase 4 lease recovery and idempotency have passed the reported local crash/restart drills. Durable transient retry/backoff is now implemented on `feat/phase4-transient-retries`; automated and local runtime verification is pending. AI execution, approvals, order_action, cancellation, complete run-trace APIs, and the React console remain outstanding. The full smoke-test and duplication-check acceptance results are not yet recorded as passing.
+Phases 1 and 2 are implemented. Phase 3 manual/webhook trigger, PostgreSQL queue, worker execution, durable delay, and max_steps enforcement are implemented and the local scenarios are documented in `dev_report/phase_3.md`. Phase 4 lease recovery and idempotency have passed the reported local crash/restart drills. Durable transient retry/backoff is also implemented and tested. 
+
+AI execution, approvals, order_action, cancellation, complete run-trace APIs, and the React console remain outstanding. The full smoke-test and duplication-check acceptance results are not yet recorded as passing.
 
 
 ## Worker runtime modes
@@ -89,9 +98,3 @@ The worker polls every 1,000 ms by default and uses a 60-second queue lease. The
 
 Per-node retries are configured with `RELAY_WORKER_RETRY_MAX_ATTEMPTS` (default 3 total attempts), `RELAY_WORKER_RETRY_INITIAL_DELAY_SECONDS` (default 2), and `RELAY_WORKER_RETRY_MAX_DELAY_SECONDS` (default 30). Backoff doubles after each failed attempt and is stored using the PostgreSQL queue availability timestamp.
 
-## Phase reports
-
-- [Phase 3 — Trigger, durable queue, and basic execution](dev_report/phase_3.md)
-- [Phase 4 — Crash recovery, retries, and idempotency](dev_report/phase_4.md)
-
-Phase 4 retry implementation is present on the feature branch. Connection failures/timeouts and HTTP 408, 425, 429, and 5xx are retriable; other non-2xx responses and local validation/request errors are terminal. Each step persists its own attempt count and reuses the same idempotency key across retries. The queue attempts counter records claims/reclaims and is not the per-node retry counter. Run the local build and retry verification scenarios before merging; see `dev_report/phase_4.md`.

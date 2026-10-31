@@ -128,6 +128,6 @@ These tests have been added but have **not yet been run in the user's local envi
 
 ## Phase 4 status
 
-The lease and recovery portion of Phase 4 is locally verified for the reported kill/restart scenarios. Stable idempotency is verified against the mock-world ledger, including the crash window after a side effect and before database step persistence. Durable transient retry/backoff and retry exhaustion are now implemented on the feature branch, but local build, automated test, and runtime recovery verification are pending.
+The lease and recovery portion of Phase 4 is locally verified for the reported kill/restart scenarios. Stable idempotency is verified against the mock-world ledger, including the crash window after a side effect and before database step persistence. Durable transient retry/backoff and retry exhaustion are now implemented and tested
 
-**Phase 4 remains partially complete until the new retry implementation passes local tests, including crash/restart during a scheduled retry.**
+Phase 4 is now complete with all implementation passing local tests, including crash/restart during a scheduled retry.
