@@ -1,7 +1,7 @@
 # Phase 4 Development Report — Crash Recovery, Retries, and Idempotency
 
 **Milestone:** M4 — Recovery, retries, and idempotency  
-**Status:** Partially implemented. Lease recovery, restart recovery, and mock-world idempotency passed the local tests reported below. Durable transient retry/backoff is not implemented.
+**Status:** Retry implementation added on the feature branch; local build and runtime verification are pending. Lease recovery, restart recovery, and mock-world idempotency passed the earlier local tests reported below.
 
 ## Objective
 
