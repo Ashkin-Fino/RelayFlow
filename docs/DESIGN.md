@@ -323,7 +323,7 @@ The implementation should proceed in this specific order:
 - Claim transaction: acquire lease atomically.
 - Never hold a long DB transaction across external HTTP calls or delays.
 
-## 8. Canonical files and local execution
+## 14. Canonical files and local execution
 
 Keep these files/scripts intact and use them as the source of truth:
 - `data/node_catalog.json`
@@ -340,7 +340,7 @@ Catalog metadata (`required`, `enum`, `templatable`, `side_effect`, `requires_ap
 
 ### Java package layout
 
-Keep `run/` limited to the trigger HTTP API and its request/response, service, and trigger-specific exception classes. Durable run/step state and execution support belong in the separate `execution/` package. Queue polling and process orchestration belong in `worker/`; node execution adapters live under `execution/executor/`.
+Keep three primary package `common/`, `api/` and `worker/`. Everything related to API (`workflow/`, `run/`) belongs to `api/` folder. Everything related to Execution worker belongs to `worker/` folder. Common items (`exception/`, `entity/` and `repository/`) belongs to `common/` folder.
 
 ```text
 src/main/java/com/airtribe/relayflow/
@@ -348,21 +348,21 @@ src/main/java/com/airtribe/relayflow/
   catalog/               # catalog loader shared by validation and runtime
   config/                # typed application configuration
   seed/                  # repeatable startup seed loader
-  exception/             # global exception handler
-  workflow/              # workflow API, entity, repository, validation and service
-  run/                   # trigger API only
-    RunTriggerController.java
-    dto/                  # trigger response DTOs
-    service/              # RunTriggerService
-    exceptions/           # trigger-specific exceptions
-  execution/              # durable execution state and support
-    entity/               # RunEntity, StepEntity
-    repository/           # RunRepository, StepRepository, QueueJobRepository
+  common/
+    exception/             # global exception handler and custom exceptions
+    entity/
+    repository/
+  api/
+    workflow/              # workflow API, entity, repository, validation and service
+    run/                   # trigger API only
+      RunTriggerController.java
+      dto/                  # trigger response DTOs
+      service/              # RunTriggerService
+  worker/              
     service/               # RunProgressService
     executor/              # DeterministicNodeExecutor, NodeExecutionResult, TemplateResolver
-  worker/                  # QueueWorker and WorkerExecutionService
-  approval/                # future approval decisions and gate queries
-  ai/                      # future provider adapter, schema validation and usage
+    approval/                # future approval decisions and gate queries
+    ai/                      # future provider adapter, schema validation and usage
   mockworld/               # future mock-world HTTP client
 src/main/resources/
   application.properties
@@ -390,7 +390,7 @@ Local processes:
 4. Acceptance scripts.
 
 No AWS resource is required for local development. The original Python mock world and verification scripts remain unchanged.
-## 9. Verification plan
+## 15. Verification plan
 
 ### Gate A — API and validation
 - Seeds present and Published.
@@ -429,7 +429,7 @@ Then:
 python scripts/duplication_check.py --url http://localhost:9210
 ```
 
-## 10. Acceptance checklist
+## 16. Acceptance checklist
 
 ### Must Have
 - [ ] Catalog loaded and used by validator.
@@ -459,7 +459,7 @@ python scripts/duplication_check.py --url http://localhost:9210
 - [ ] Timeout and AI token caps.
 - [ ] Numbered immutable workflow versions.
 
-## 11. Key design decisions
+## 17. Key design decisions
 1. Python repository assets remain the specification/test harness; Java replaces the platform implementation, not mock world or scripts.
 2. PostgreSQL is the durable source of truth; a DB-backed queue is sufficient.
 3. API enqueues; worker executes.

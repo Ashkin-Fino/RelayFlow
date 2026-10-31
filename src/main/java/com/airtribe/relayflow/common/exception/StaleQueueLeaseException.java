@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.execution.repository;
+package com.airtribe.relayflow.common.exception;
 
 public class StaleQueueLeaseException extends RuntimeException {
 	public StaleQueueLeaseException(long jobId) {

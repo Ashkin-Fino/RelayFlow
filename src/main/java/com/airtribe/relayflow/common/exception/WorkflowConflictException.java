@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.workflow.exceptions;
+package com.airtribe.relayflow.common.exception;
 
 public class WorkflowConflictException extends RuntimeException {
 	public WorkflowConflictException(String workflowId) {

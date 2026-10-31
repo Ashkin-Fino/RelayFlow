@@ -1,14 +1,17 @@
 package com.airtribe.relayflow.workflow.service;
 
 import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+
 import com.airtribe.relayflow.catalog.NodeCatalog;
-import com.airtribe.relayflow.workflow.exceptions.WorkflowDefinitionException;
+import com.airtribe.relayflow.common.exception.WorkflowDefinitionException;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;

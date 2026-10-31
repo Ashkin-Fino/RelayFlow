@@ -6,9 +6,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.springframework.stereotype.Component;
+
 import com.airtribe.relayflow.catalog.NodeCatalog;
-import com.airtribe.relayflow.workflow.exceptions.WorkflowDefinitionException;
+import com.airtribe.relayflow.common.exception.WorkflowDefinitionException;
+
 import tools.jackson.databind.JsonNode;
 
 @Component

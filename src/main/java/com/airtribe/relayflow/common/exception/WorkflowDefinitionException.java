@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.workflow.exceptions;
+package com.airtribe.relayflow.common.exception;
 
 public class WorkflowDefinitionException extends RuntimeException {
 	private final String code;

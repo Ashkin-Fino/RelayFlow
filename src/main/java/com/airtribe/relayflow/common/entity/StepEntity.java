@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.execution.entity;
+package com.airtribe.relayflow.common.entity;
 
 import java.time.Instant;
 

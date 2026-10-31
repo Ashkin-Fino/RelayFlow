@@ -1,20 +1,22 @@
-package com.airtribe.relayflow.worker;
+package com.airtribe.relayflow.worker.service;
 
-import com.airtribe.relayflow.catalog.NodeCatalog;
-import com.airtribe.relayflow.execution.entity.RunEntity;
-import com.airtribe.relayflow.execution.entity.StepEntity;
-import com.airtribe.relayflow.execution.executor.DeterministicNodeExecutor;
-import com.airtribe.relayflow.execution.executor.NodeExecutionResult;
-import com.airtribe.relayflow.execution.executor.TemplateResolver;
-import com.airtribe.relayflow.execution.repository.ClaimedQueueJob;
-import com.airtribe.relayflow.execution.repository.QueueJobRepository;
-import com.airtribe.relayflow.execution.repository.RunRepository;
-import com.airtribe.relayflow.execution.repository.StepRepository;
-import com.airtribe.relayflow.execution.service.RunProgressService;
-import com.airtribe.relayflow.run.exceptions.RunNotFoundException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
 import org.springframework.stereotype.Service;
+
+import com.airtribe.relayflow.catalog.NodeCatalog;
+import com.airtribe.relayflow.common.entity.RunEntity;
+import com.airtribe.relayflow.common.entity.StepEntity;
+import com.airtribe.relayflow.common.exception.RunNotFoundException;
+import com.airtribe.relayflow.common.repository.QueueJobRepository;
+import com.airtribe.relayflow.common.repository.RunRepository;
+import com.airtribe.relayflow.common.repository.StepRepository;
+import com.airtribe.relayflow.worker.dto.ClaimedQueueJob;
+import com.airtribe.relayflow.worker.excutor.DeterministicNodeExecutor;
+import com.airtribe.relayflow.worker.excutor.NodeExecutionResult;
+import com.airtribe.relayflow.worker.excutor.TemplateResolver;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -33,32 +35,49 @@ public class WorkerExecutionService {
     public WorkerExecutionService(RunRepository runs, StepRepository steps, QueueJobRepository queue,
             RunProgressService progress, DeterministicNodeExecutor executor, TemplateResolver templates,
             NodeCatalog catalog, ObjectMapper mapper) {
-        this.runs = runs; this.steps = steps; this.queue = queue; this.progress = progress;
-        this.executor = executor; this.templates = templates; this.catalog = catalog; this.mapper = mapper;
+        this.runs = runs;
+        this.steps = steps;
+        this.queue = queue;
+        this.progress = progress;
+        this.executor = executor;
+        this.templates = templates;
+        this.catalog = catalog;
+        this.mapper = mapper;
     }
 
     /** One node per queue claim: persist progress, then release or delay the job. */
     public void execute(ClaimedQueueJob job) {
         RunEntity run = runs.findById(job.runId()).orElseThrow(() -> new RunNotFoundException(job.runId()));
+        
         if (terminal(run.getStatus())) {
-            queue.complete(job.jobId(), job.leaseToken(), "Run is already terminal"); return;
+            queue.complete(job.jobId(), job.leaseToken(), "Run is already terminal"); 
+            return;
         }
+
         if ("waiting_approval".equals(run.getStatus())) {
-            queue.reschedule(job.jobId(), job.leaseToken(), 30); return;
+            queue.reschedule(job.jobId(), job.leaseToken(), 30); 
+            return;
         }
-        if ("queued".equals(run.getStatus())) run = progress.start(run.getId());
-        else if (!"running".equals(run.getStatus())) {
-            failRun(job, "invalid_run_state", "Unexpected run state: " + run.getStatus()); return;
+
+        if ("queued".equals(run.getStatus())) {
+            run = progress.start(run.getId());
+        } else if (!"running".equals(run.getStatus())) {
+            failRun(job, "invalid_run_state", "Unexpected run state: " + run.getStatus());
+            return;
         }
 
         int sequence = run.getStepsExecuted() + 1;
-        int maxSteps = run.getDefinitionSnapshot().path("limits").path("max_steps").asInt(0);
+        int maxSteps = run.getDefinitionSnapshot().path("limits")
+            .path("max_steps")
+            .asInt(0);
         if (maxSteps < 1 || sequence > maxSteps) {
-            failRun(job, "max_steps_exceeded", "Workflow exceeded max_steps=" + maxSteps); return;
+            failRun(job, "max_steps_exceeded", "Workflow exceeded max_steps=" + maxSteps);
+            return;
         }
         JsonNode node = findNode(run.getDefinitionSnapshot().path("nodes"), run.getCurrentNodeId());
         if (node == null) {
-            failRun(job, "current_node_not_found", "Node not found in run snapshot: " + run.getCurrentNodeId()); return;
+            failRun(job, "current_node_not_found", "Node not found in run snapshot: " + run.getCurrentNodeId()); 
+            return;
         }
         String nodeId = node.path("id").asString(), nodeType = node.path("type").asString();
         Map<String, JsonNode> outputs = new LinkedHashMap<>();
@@ -74,7 +93,8 @@ public class WorkerExecutionService {
             StepEntity failed = new StepEntity(run.getId(), nodeId, nodeType, sequence,
                 node.path("params").deepCopy(), idempotencyKey(run.getId(), nodeId, sequence, nodeType));
             failed.fail(err, 0);
-            progress.failStep(run.getId(), job.jobId(), job.leaseToken(), failed, err); return;
+            progress.failStep(run.getId(), job.jobId(), job.leaseToken(), failed, err);
+            return;
         }
 
         StepEntity step = new StepEntity(run.getId(), nodeId, nodeType, sequence, resolved.deepCopy(),
@@ -92,14 +112,23 @@ public class WorkerExecutionService {
     }
 
     private JsonNode findNode(JsonNode nodes, String id) {
-        if (id == null || !nodes.isArray()) return null;
-        for (JsonNode n : nodes) if (id.equals(n.path("id").asString())) return n;
+
+        if (id == null || !nodes.isArray()) {
+            return null;
+        }
+
+        for (JsonNode n : nodes) {
+            if (id.equals(n.path("id").asString())) return n;
+        }
+
         return null;
     }
     private String idempotencyKey(String runId, String nodeId, int sequence, String type) {
-        for (JsonNode n : catalog.definition().path("nodes"))
-            if (type.equals(n.path("type").asString()) && n.path("side_effect").asBoolean(false))
+        for (JsonNode n : catalog.definition().path("nodes")) {
+            if (type.equals(n.path("type").asString()) && n.path("side_effect").asBoolean(false)) {
                 return runId + ":" + nodeId + ":" + sequence;
+            }
+        }
         return null;
     }
     private void failRun(ClaimedQueueJob job, String code, String message) {

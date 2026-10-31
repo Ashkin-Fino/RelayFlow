@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.exception;
+package com.airtribe.relayflow.common.exception;
 
 import java.util.Map;
 
@@ -8,13 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import com.airtribe.relayflow.run.exceptions.InvalidTriggerInputException;
-import com.airtribe.relayflow.run.exceptions.InvalidTriggerTypeException;
-import com.airtribe.relayflow.run.exceptions.WebhookUnauthorizedException;
-import com.airtribe.relayflow.run.exceptions.WorkflowNotPublishedException;
-import com.airtribe.relayflow.workflow.exceptions.WorkflowConflictException;
-import com.airtribe.relayflow.workflow.exceptions.WorkflowDefinitionException;
-import com.airtribe.relayflow.workflow.exceptions.WorkflowNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

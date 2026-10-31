@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.execution.repository;
+package com.airtribe.relayflow.worker.dto;
 
 /**
  * A claimed queue job and the unique fencing token required for every later mutation.

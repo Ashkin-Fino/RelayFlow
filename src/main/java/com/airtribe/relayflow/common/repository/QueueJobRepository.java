@@ -1,11 +1,15 @@
-package com.airtribe.relayflow.execution.repository;
+package com.airtribe.relayflow.common.repository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.airtribe.relayflow.common.exception.StaleQueueLeaseException;
+import com.airtribe.relayflow.worker.dto.ClaimedQueueJob;
 
 @Repository
 public class QueueJobRepository {

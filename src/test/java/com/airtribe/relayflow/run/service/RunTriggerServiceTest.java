@@ -15,12 +15,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.airtribe.relayflow.execution.entity.RunEntity;
-import com.airtribe.relayflow.run.exceptions.WebhookUnauthorizedException;
-import com.airtribe.relayflow.execution.repository.QueueJobRepository;
-import com.airtribe.relayflow.execution.repository.RunRepository;
-import com.airtribe.relayflow.workflow.entity.WorkflowEntity;
-import com.airtribe.relayflow.workflow.repository.WorkflowRepository;
+import com.airtribe.relayflow.common.entity.RunEntity;
+import com.airtribe.relayflow.common.entity.WorkflowEntity;
+import com.airtribe.relayflow.common.exception.WebhookUnauthorizedException;
+import com.airtribe.relayflow.common.repository.QueueJobRepository;
+import com.airtribe.relayflow.common.repository.RunRepository;
+import com.airtribe.relayflow.common.repository.WorkflowRepository;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;

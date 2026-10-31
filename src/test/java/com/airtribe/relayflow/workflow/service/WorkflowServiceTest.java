@@ -13,10 +13,10 @@ import static org.mockito.Mockito.when;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.airtribe.relayflow.catalog.NodeCatalog;
+import com.airtribe.relayflow.common.entity.WorkflowEntity;
+import com.airtribe.relayflow.common.exception.WorkflowConflictException;
+import com.airtribe.relayflow.common.repository.WorkflowRepository;
 import com.airtribe.relayflow.workflow.dto.WorkflowStatusResponse;
-import com.airtribe.relayflow.workflow.entity.WorkflowEntity;
-import com.airtribe.relayflow.workflow.exceptions.WorkflowConflictException;
-import com.airtribe.relayflow.workflow.repository.WorkflowRepository;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
