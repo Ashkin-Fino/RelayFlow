@@ -22,6 +22,7 @@ public class QueueWorker {
     private final String workerId;
     private final int leaseSeconds;
 
+
     public QueueWorker(QueueJobRepository queue, WorkerExecutionService execution,
             @Value("${relay.worker.id:relay-worker}") String workerId,
             @Value("${relay.worker.lease-seconds:60}") int leaseSeconds) {
@@ -36,6 +37,7 @@ public class QueueWorker {
         /**
          * Polls the queue for the next available job and processes it.
          */
+        log.info("Worker {} polling for jobs", workerId);
         Optional<ClaimedQueueJob> claimed;
         try { 
             claimed = queue.claimNext(workerId, leaseSeconds); 
@@ -45,7 +47,12 @@ public class QueueWorker {
         }
 
         claimed.ifPresent(job -> {
-            try { 
+            try {
+                log.info(
+                    "Worker {} claimed job {} for run {}",
+                    workerId, claimed.get().jobId(),
+                    claimed.get().runId()
+                );
                 execution.execute(job); 
             } catch (RuntimeException ex) {
                 // Do not clear a failed claim; lease expiry enables safe reclaim.

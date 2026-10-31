@@ -1,0 +1,27 @@
+{
+  "id": "wf_webhook_test_support_notification",
+  "name": "Webhook Test Support Notification",
+  "description": "A simple workflow to test webhook triggering, workflow creation and publishing",
+  "trigger": {
+    "type": "webhook",
+    "secret": "hook_secret_123"
+  },
+  "entry": "send_notification",
+  "limits": {
+    "max_steps": 5,
+    "timeout_seconds": 60,
+    "max_ai_tokens": 0
+  },
+  "nodes": [
+    {
+      "id": "send_notification",
+      "type": "notify",
+      "params": {
+        "channel": "chat",
+        "to": "#support",
+        "message": "A new support request has been received."
+      },
+      "next": null
+    }
+  ]
+}

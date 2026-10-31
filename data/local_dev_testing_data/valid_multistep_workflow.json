@@ -1,0 +1,41 @@
+{
+  "id": "wf_chat_delay_chat_test",
+  "name": "Worker Test - Chat Delay Chat Notification",
+  "trigger": {
+    "type": "manual"
+  },
+  "entry": "notify_first",
+  "limits": {
+    "max_steps": 10
+  },
+  "nodes": [
+    {
+      "id": "notify_first",
+      "type": "notify",
+      "params": {
+        "channel": "chat",
+        "to": "#relay-resume-test",
+        "message": "First notification"
+      },
+      "next": "wait"
+    },
+    {
+      "id": "wait",
+      "type": "delay",
+      "params": {
+        "seconds": 30
+      },
+      "next": "notify_second"
+    },
+    {
+      "id": "notify_second",
+      "type": "notify",
+      "params": {
+        "channel": "chat",
+        "to": "#relay-resume-test",
+        "message": "Second notification"
+      },
+      "next": null
+    }
+  ]
+}

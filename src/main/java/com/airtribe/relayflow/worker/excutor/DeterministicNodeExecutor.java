@@ -7,6 +7,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +23,8 @@ public class DeterministicNodeExecutor {
 	private final ObjectMapper objectMapper;
 	private final HttpClient httpClient;
 	private final URI mockWorldUrl;
+
+	private static final Logger log = LoggerFactory.getLogger(DeterministicNodeExecutor.class);
 
 	public DeterministicNodeExecutor(ObjectMapper objectMapper,
 			@Value("${relay.mock-world.url}") String mockWorldUrl) {
@@ -39,6 +43,10 @@ public class DeterministicNodeExecutor {
 		 * @param params The resolved parameters for the node.
 		 * @return The result of the node execution.
 		 */
+        log.info(
+            "Worker executing run={}, node={}",
+            runId, node.path("id").asText()
+        );
 		String nodeId = node.path("id").asString();
 		String nodeType = node.path("type").asString();
 		return switch (nodeType) {
