@@ -14,25 +14,25 @@ import com.airtribe.relayflow.worker.dto.ClaimedQueueJob;
 @Repository
 public class QueueJobRepository {
 	private static final String CLAIM_NEXT = """
-			WITH candidate AS (
-				SELECT id
-				FROM queue_jobs
-				WHERE (status = 'queued' AND available_at <= now())
-				   OR (status = 'leased' AND lease_expires_at <= now())
-				ORDER BY CASE WHEN status = 'queued' THEN available_at ELSE lease_expires_at END, id
-				LIMIT 1
-				FOR UPDATE SKIP LOCKED
-			)
-			UPDATE queue_jobs AS job
-			SET status = 'leased',
-			    lease_owner = ?,
-			    lease_expires_at = now() + (? * INTERVAL '1 second'),
-			    attempts = attempts + 1,
-			    updated_at = now()
-			FROM candidate
-			WHERE job.id = candidate.id
-			RETURNING job.id, job.run_id, job.lease_owner
-			""";
+		WITH candidate AS (
+			SELECT id
+			FROM queue_jobs
+			WHERE (status = 'queued' AND available_at <= now())
+				OR (status = 'leased' AND lease_expires_at <= now())
+			ORDER BY CASE WHEN status = 'queued' THEN available_at ELSE lease_expires_at END, id
+			LIMIT 1
+			FOR UPDATE SKIP LOCKED
+		)
+		UPDATE queue_jobs AS job
+		SET status = 'leased',
+			lease_owner = ?,
+			lease_expires_at = now() + (? * INTERVAL '1 second'),
+			attempts = attempts + 1,
+			updated_at = now()
+		FROM candidate
+		WHERE job.id = candidate.id
+		RETURNING job.id, job.run_id, job.lease_owner
+	""";
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -41,11 +41,20 @@ public class QueueJobRepository {
 	}
 
 	public void enqueue(String runId) {
+		// Enqueues a new job for the specified run ID by inserting a record 
+		// into the queue_jobs table with status 'queued'.
 		jdbcTemplate.update("INSERT INTO queue_jobs (run_id, status) VALUES (?, 'queued')", runId);
 	}
 
 	@Transactional
 	public Optional<ClaimedQueueJob> claimNext(String workerId, int leaseSeconds) {
+		/**
+		 * Claims the next available queue job for processing by a worker.
+		 * 
+		 * @param workerId The ID of the worker claiming the job.
+		 * @param leaseSeconds The number of seconds for which the job lease is valid.
+		 * @return An Optional containing the claimed queue job, or empty if no job is available
+		 */
 		if (workerId == null || workerId.isBlank()) {
 			throw new IllegalArgumentException("workerId must not be blank");
 		}
@@ -56,23 +65,30 @@ public class QueueJobRepository {
 		// reclaims a job after its previous lease expires.
 		String leaseToken = workerId + ":" + UUID.randomUUID();
 		List<ClaimedQueueJob> claims = jdbcTemplate.query(CLAIM_NEXT,
-				(resultSet, rowNumber) -> new ClaimedQueueJob(
-						resultSet.getLong("id"),
-						resultSet.getString("run_id"),
-						resultSet.getString("lease_owner")),
-				leaseToken, leaseSeconds);
+			(resultSet, rowNumber) -> new ClaimedQueueJob(
+				resultSet.getLong("id"),
+				resultSet.getString("run_id"),
+				resultSet.getString("lease_owner")),
+			leaseToken, leaseSeconds);
 		return claims.stream().findFirst();
 	}
 
 	@Transactional
 	public void complete(long jobId, String leaseToken, String error) {
+		/**
+		 * Completes a queue job by marking it as completed and clearing its lease information.
+		 * 
+		 * @param jobId The ID of the queue job to complete.
+		 * @param leaseToken The lease token for the queue job.
+		 * @param error The error message, if any.
+		 */
 		int updated = jdbcTemplate.update("""
 				UPDATE queue_jobs
 				SET status = 'completed', lease_owner = NULL, lease_expires_at = NULL,
 				    last_error = ?, updated_at = now()
 				WHERE id = ? AND status = 'leased' AND lease_owner = ?
 				  AND lease_expires_at > now()
-				""", error, jobId, leaseToken);
+			""", error, jobId, leaseToken);
 		if (updated != 1) {
 			throw new StaleQueueLeaseException(jobId);
 		}
@@ -80,6 +96,15 @@ public class QueueJobRepository {
 
 	@Transactional
 	public void reschedule(long jobId, String leaseToken, long delaySeconds) {
+		/**
+		 * Reschedules a queue job by setting its status back to 'queued' and 
+		 * updating its availability time.
+		 * 
+		 * @param jobId The ID of the queue job to reschedule.
+		 * @param leaseToken The lease token for the queue job.
+		 * @param delaySeconds The number of seconds to delay the job before it becomes available again.
+		 * @throws IllegalArgumentException if delaySeconds is negative.
+		 */
 		if (delaySeconds < 0) {
 			throw new IllegalArgumentException("delaySeconds must not be negative");
 		}
@@ -89,7 +114,7 @@ public class QueueJobRepository {
 				    lease_owner = NULL, lease_expires_at = NULL, updated_at = now()
 				WHERE id = ? AND status = 'leased' AND lease_owner = ?
 				  AND lease_expires_at > now()
-				""", delaySeconds, jobId, leaseToken);
+			""", delaySeconds, jobId, leaseToken);
 		if (updated != 1) {
 			throw new StaleQueueLeaseException(jobId);
 		}

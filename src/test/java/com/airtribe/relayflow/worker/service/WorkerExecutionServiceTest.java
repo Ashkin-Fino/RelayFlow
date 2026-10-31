@@ -17,8 +17,8 @@ import com.airtribe.relayflow.common.repository.QueueJobRepository;
 import com.airtribe.relayflow.common.repository.RunRepository;
 import com.airtribe.relayflow.common.repository.StepRepository;
 import com.airtribe.relayflow.worker.dto.ClaimedQueueJob;
+import com.airtribe.relayflow.worker.dto.NodeExecutionResult;
 import com.airtribe.relayflow.worker.excutor.DeterministicNodeExecutor;
-import com.airtribe.relayflow.worker.excutor.NodeExecutionResult;
 import com.airtribe.relayflow.worker.excutor.TemplateResolver;
 
 import tools.jackson.databind.JsonNode;

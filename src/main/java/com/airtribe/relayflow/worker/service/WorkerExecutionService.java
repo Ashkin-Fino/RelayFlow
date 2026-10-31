@@ -13,8 +13,8 @@ import com.airtribe.relayflow.common.repository.QueueJobRepository;
 import com.airtribe.relayflow.common.repository.RunRepository;
 import com.airtribe.relayflow.common.repository.StepRepository;
 import com.airtribe.relayflow.worker.dto.ClaimedQueueJob;
+import com.airtribe.relayflow.worker.dto.NodeExecutionResult;
 import com.airtribe.relayflow.worker.excutor.DeterministicNodeExecutor;
-import com.airtribe.relayflow.worker.excutor.NodeExecutionResult;
 import com.airtribe.relayflow.worker.excutor.TemplateResolver;
 
 import tools.jackson.databind.JsonNode;
@@ -47,6 +47,11 @@ public class WorkerExecutionService {
 
     /** One node per queue claim: persist progress, then release or delay the job. */
     public void execute(ClaimedQueueJob job) {
+        /**
+         * Executes a claimed queue job by processing the associated run and its current node.
+        */
+
+        // Get the run entity of the claimed job, or fail the claim if it doesn't exist
         RunEntity run = runs.findById(job.runId()).orElseThrow(() -> new RunNotFoundException(job.runId()));
         
         if (terminal(run.getStatus())) {
@@ -74,6 +79,8 @@ public class WorkerExecutionService {
             failRun(job, "max_steps_exceeded", "Workflow exceeded max_steps=" + maxSteps);
             return;
         }
+
+        //Get the current node's definition from the run snapshot, or fail the claim if it doesn't exist
         JsonNode node = findNode(run.getDefinitionSnapshot().path("nodes"), run.getCurrentNodeId());
         if (node == null) {
             failRun(job, "current_node_not_found", "Node not found in run snapshot: " + run.getCurrentNodeId()); 
@@ -85,6 +92,8 @@ public class WorkerExecutionService {
             .filter(s -> "succeeded".equals(s.getStatus()) && s.getOutput() != null)
             .forEach(s -> outputs.put(s.getNodeId(), s.getOutput()));
 
+        // Resolve the node's parameters using the run's trigger input and previous step outputs, 
+        // or fail the step if resolution fails
         JsonNode resolved;
         try {
             resolved = templates.resolve(node.path("params"), run.getTriggerInput(), outputs);
@@ -112,7 +121,13 @@ public class WorkerExecutionService {
     }
 
     private JsonNode findNode(JsonNode nodes, String id) {
-
+        /**
+         * Finds a node by its ID in a list of nodes.
+         *
+         * @param nodes The list of nodes to search through.
+         * @param id The ID of the node to find.
+         * @return The node if found, otherwise null.
+        */
         if (id == null || !nodes.isArray()) {
             return null;
         }
@@ -123,7 +138,19 @@ public class WorkerExecutionService {
 
         return null;
     }
+
     private String idempotencyKey(String runId, String nodeId, int sequence, String type) {
+        /**
+         * Generates an idempotency key for a step based on the run ID, node ID, 
+         * sequence number, and node type.
+         *
+         * @param runId The ID of the run.
+         * @param nodeId The ID of the node.
+         * @param sequence The sequence number of the step.
+         * @param type The type of the node.
+         * @return A string representing the idempotency key, or null if the 
+         *         node type is not a side effect.
+        */
         for (JsonNode n : catalog.definition().path("nodes")) {
             if (type.equals(n.path("type").asString()) && n.path("side_effect").asBoolean(false)) {
                 return runId + ":" + nodeId + ":" + sequence;
@@ -131,16 +158,22 @@ public class WorkerExecutionService {
         }
         return null;
     }
+
     private void failRun(ClaimedQueueJob job, String code, String message) {
+        // Fail the run and complete the queue job with an error message.
         progress.failRun(job.runId(), job.jobId(), job.leaseToken(),
             mapper.createObjectNode().put("code", code).put("message", message));
     }
+
     private ObjectNode error(String code, RuntimeException ex) {
+        // Create an error object with a code and message based on the exception.
         String msg = ex.getMessage() == null || ex.getMessage().isBlank()
             ? ex.getClass().getSimpleName() : ex.getMessage();
         return mapper.createObjectNode().put("code", code).put("message", msg);
     }
+
     private boolean terminal(String s) {
+        // Check if the run status is terminal (succeeded, failed, or cancelled).
         return "succeeded".equals(s) || "failed".equals(s) || "cancelled".equals(s);
     }
 }

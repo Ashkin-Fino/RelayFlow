@@ -10,6 +10,8 @@ import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.airtribe.relayflow.worker.dto.NodeExecutionResult;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -21,13 +23,22 @@ public class DeterministicNodeExecutor {
 	private final URI mockWorldUrl;
 
 	public DeterministicNodeExecutor(ObjectMapper objectMapper,
-			@Value("${relay.mock-world.url:http://localhost:9210}") String mockWorldUrl) {
+			@Value("${relay.mock-world.url}") String mockWorldUrl) {
 		this.objectMapper = objectMapper;
 		this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 		this.mockWorldUrl = URI.create(mockWorldUrl);
 	}
 
 	public NodeExecutionResult execute(String runId, int sequence, JsonNode node, JsonNode params) {
+		/**
+		 * Executes a node based on its type and parameters.
+		 *
+		 * @param runId The ID of the run.
+		 * @param sequence The sequence number of the step.
+		 * @param node The node definition.
+		 * @param params The resolved parameters for the node.
+		 * @return The result of the node execution.
+		 */
 		String nodeId = node.path("id").asString();
 		String nodeType = node.path("type").asString();
 		return switch (nodeType) {
@@ -40,6 +51,13 @@ public class DeterministicNodeExecutor {
 	}
 
 	private NodeExecutionResult executeCondition(JsonNode node, JsonNode params) {
+		/**
+		 * Executes a condition node by evaluating the specified operation on the left and right parameters.
+		 * 
+		 * @param node The node definition containing the condition details.
+		 * @param params The resolved parameters for the condition node.
+		 * @return The result of the condition node execution, including the output and the next branch to follow.
+		 */
 		String left = params.path("left").asString();
 		String right = params.path("right").asString();
 		String operation = params.path("op").asString();
@@ -53,12 +71,12 @@ public class DeterministicNodeExecutor {
 		};
 		ObjectNode output = objectMapper.createObjectNode().put("result", result);
 		String branch = node.path(result ? "on_true" : "on_false").isNull()
-				? null
-				: node.path(result ? "on_true" : "on_false").asString();
+				? null : node.path(result ? "on_true" : "on_false").asString();
 		return NodeExecutionResult.next(output, branch);
 	}
 
 	private double parseNumber(String value, String operation) {
+		// Parses a string value into a double for numeric comparisons in condition nodes.
 		try {
 			return Double.parseDouble(value);
 		} catch (NumberFormatException exception) {
@@ -67,6 +85,15 @@ public class DeterministicNodeExecutor {
 	}
 
 	private NodeExecutionResult executeDelay(JsonNode node, JsonNode params) {
+		/**
+		 * Executes a delay node by returning the specified number of seconds 
+		 * to delay before proceeding to the next node.
+		 * 
+		 * @param node The node definition containing the delay details.
+		 * @param params The resolved parameters for the delay node.
+		 * @return The result of the delay node execution, including the output and 
+		 *         the next node to proceed to after the delay.
+		 */
 		long seconds = params.path("seconds").asLong(-1);
 		if (seconds < 0) {
 			throw new IllegalStateException("Delay seconds must be a non-negative number");
@@ -77,6 +104,17 @@ public class DeterministicNodeExecutor {
 
 	private NodeExecutionResult executeNotify(String runId, int sequence, JsonNode node,
 			String nodeId, JsonNode params) {
+		/**
+		 * Executes a notify node by sending a notification through the 
+		 * specified channel (email or chat).
+		 * 
+		 * @param runId The ID of the run.
+		 * @param sequence The sequence number of the step.
+		 * @param node The node definition containing the notification details.
+		 * @param nodeId The ID of the node.
+		 * @param params The resolved parameters for the notify node.
+		 * @return The result of the notify node execution.
+		 */
 		String channel = params.path("channel").asString();
 		ObjectNode body = objectMapper.createObjectNode();
 		String path;
@@ -99,7 +137,19 @@ public class DeterministicNodeExecutor {
 		return NodeExecutionResult.next(response.path("body"), next);
 	}
 
-	private NodeExecutionResult executeHttpRequest(String runId, int sequence, JsonNode node, String nodeId, JsonNode params) {
+	private NodeExecutionResult executeHttpRequest(String runId, int sequence, 
+			JsonNode node, String nodeId, JsonNode params) {
+		/**
+		 * Executes an HTTP request node by sending a request to the specified 
+		 * URL with the given method and body.
+		 * 
+		 * @param runId The ID of the run.
+		 * @param sequence The sequence number of the step.
+		 * @param node The node definition containing the HTTP request details.
+		 * @param nodeId The ID of the node.
+		 * @param params The resolved parameters for the HTTP request node.
+		 * @return The result of the HTTP request execution.
+		 */
 		String method = params.path("method").asString();
 		URI uri = URI.create(params.path("url").asString());
 		JsonNode body = params.path("body");
@@ -111,6 +161,15 @@ public class DeterministicNodeExecutor {
 	}
 
 	private JsonNode send(String method, URI uri, JsonNode body, String idempotencyKey) {
+		/**
+		 * Sends an HTTP request to the specified URI with the given method and body.
+		 * 
+		 * @param method The HTTP method to use.
+		 * @param uri The URI to send the request to.
+		 * @param body The body of the request.
+		 * @param idempotencyKey The idempotency key for the request.
+		 * @return The response from the server.
+		 */
 		try {
 			HttpRequest.Builder request = HttpRequest.newBuilder(uri)
 					.timeout(Duration.ofSeconds(15))

@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.worker.excutor;
+package com.airtribe.relayflow.worker.dto;
 
 import tools.jackson.databind.JsonNode;
 

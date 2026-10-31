@@ -33,6 +33,9 @@ public class QueueWorker {
 
     @Scheduled(fixedDelayString = "${relay.worker.poll-interval-ms:1000}")
     public void poll() {
+        /**
+         * Polls the queue for the next available job and processes it.
+         */
         Optional<ClaimedQueueJob> claimed;
         try { 
             claimed = queue.claimNext(workerId, leaseSeconds); 
