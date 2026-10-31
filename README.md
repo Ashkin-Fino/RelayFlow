@@ -37,8 +37,8 @@ $env:RELAY_AI_BASE_URL = 'http://localhost:9001/v1'
 $env:RELAY_AI_MODEL = 'alpha-small'
 # Set for a real provider; a future HTTP adapter can use any dummy bearer key with mock_provider.py.
 $env:RELAY_AI_API_KEY = '<provider or local mock key>'
-.\\mvnw.cmd clean package
-java -jar target\\relayflow-0.0.1-SNAPSHOT.jar
+.\mvnw.cmd clean package
+java -jar target\relayflow-0.0.1-SNAPSHOT.jar
 ```
 
 The AI settings are currently configuration placeholders. AI node execution and provider calls are not implemented yet. Keep real provider keys in environment variables only. The app applies `src/main/resources/db/migration` through Flyway and inserts the four canonical seed workflows as Published. Seed inserts are conflict-safe and do not overwrite an existing workflow on restart. Set `RELAY_SEED_ENABLED=false` to disable seed insertion. `SERVER_PORT` overrides the default API port `8080`.
@@ -47,12 +47,6 @@ Run the mock world in another terminal:
 
 ```powershell
 python scripts/mock_world.py --port 9210
-```
-
-For local AI adapter development, start the mock provider in another terminal:
-
-```powershell
-python scripts/mock_provider.py --port 9001 --name alpha
 ```
 
 Spring Boot health is available at `http://localhost:8080/actuator/health`.
