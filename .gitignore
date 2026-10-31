@@ -23,9 +23,6 @@
 hs_err_pid*
 replay_pid*
 
-# development status and report files
-dev_report/*
-
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar

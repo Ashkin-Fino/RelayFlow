@@ -68,7 +68,12 @@ Phases 1 and 2 are implemented. Phase 3 manual/webhook trigger, PostgreSQL queue
 
 ## Worker runtime modes
 
-The worker is enabled by default. The normal JAR command starts API and worker together. To run API-only:
+The worker is enabled by default. The normal JAR command starts API and worker together. 
+
+java -jar target\relayflow-0.0.1-SNAPSHOT.jar --relay.worker.id=worker-m1 --server.port=8080
+
+
+To run API-only:
 
 ```powershell
 java -jar target\relayflow-0.0.1-SNAPSHOT.jar --relay.worker.enabled=false
@@ -77,7 +82,7 @@ java -jar target\relayflow-0.0.1-SNAPSHOT.jar --relay.worker.enabled=false
 To run worker-only (same JAR and same PostgreSQL database):
 
 ```powershell
-java -jar target\relayflow-0.0.1-SNAPSHOT.jar --spring.main.web-application-type=none --relay.worker.enabled=true --relay.worker.id=worker-only-1
+java -jar target\relayflow-0.0.1-SNAPSHOT.jar --spring.main.web-application-type=none --relay.worker.enabled=true --relay.worker.id=worker-1
 ```
 
 The worker polls every 1,000 ms by default and uses a 60-second queue lease. These can be configured with RELAY_WORKER_POLL_INTERVAL_MS and RELAY_WORKER_LEASE_SECONDS. SERVER_PORT overrides the API port.
