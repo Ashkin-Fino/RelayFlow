@@ -61,6 +61,24 @@ class WorkerExecutionServiceTest {
     }
 
     @Test
+    void secondTransientFailureUsesDoubledBackoff() {
+        TestDependencies d = dependencies();
+        StepEntity step = new StepEntity("run_1", "send", "notify", 1,
+            mapper.readTree("{\"channel\":\"chat\",\"to\":\"#ops\",\"message\":\"hello\"}"),
+            "run_1:send:1");
+        step.waitForRetry(mapper.createObjectNode().put("message", "first failure"), 10);
+        step.beginRetry();
+        when(d.steps.findByRunIdAndSequence("run_1", 1)).thenReturn(Optional.of(step));
+        when(d.executor.execute(eq("run_1"), eq(1), any(JsonNode.class), any(JsonNode.class)))
+            .thenThrow(new NodeExecutionException("service unavailable", true, 503));
+
+        d.service.execute(d.job);
+
+        verify(d.progress).retryStep(eq("run_1"), eq(9L), eq("worker:lease"),
+            any(StepEntity.class), any(JsonNode.class), anyLong(), eq(4L));
+    }
+
+    @Test
     void permanentFailureIsNotRetried() {
         TestDependencies d = dependencies();
         when(d.executor.execute(eq("run_1"), eq(1), any(JsonNode.class), any(JsonNode.class)))
