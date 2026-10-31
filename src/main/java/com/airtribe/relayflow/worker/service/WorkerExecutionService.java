@@ -152,7 +152,7 @@ public class WorkerExecutionService {
 
             if (retryable && step.getAttempt() < maxAttempts) {
                 long delay = retryDelaySeconds(step.getAttempt());
-                progress.retryStep(run.getId(), job.jobId(), job.leaseToken(), step, err, delay);
+                progress.retryStep(run.getId(), job.jobId(), job.leaseToken(), step, err, durationMs, delay);
                 return;
             }
 
