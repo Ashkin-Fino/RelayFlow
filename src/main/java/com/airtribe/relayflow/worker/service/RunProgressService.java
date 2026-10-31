@@ -65,9 +65,9 @@ public class RunProgressService {
      */
     @Transactional
     public void retryStep(String runId, long jobId, String leaseToken,
-            StepEntity step, JsonNode error, long delaySeconds) {
+            StepEntity step, JsonNode error, long durationMs, long delaySeconds) {
         runRepository.findById(runId).orElseThrow(() -> new RunNotFoundException(runId));
-        step.waitForRetry(error, 0);
+        step.waitForRetry(error, durationMs);
         stepRepository.save(step);
         queueJobRepository.reschedule(jobId, leaseToken, delaySeconds);
     }
