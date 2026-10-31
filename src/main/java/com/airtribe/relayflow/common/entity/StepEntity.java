@@ -91,6 +91,10 @@ public class StepEntity {
         return output;
     }
 
+    public JsonNode getResolvedInput() {
+        return resolvedInput;
+    }
+
     public String getStatus() {
         return status;
     }
