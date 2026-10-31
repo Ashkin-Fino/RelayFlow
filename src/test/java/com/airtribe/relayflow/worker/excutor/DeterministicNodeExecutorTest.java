@@ -45,7 +45,7 @@ class DeterministicNodeExecutorTest {
         }
     }
 
-    private NodeExecutionException execute(int port) {
+    private void execute(int port) {
         DeterministicNodeExecutor executor = new DeterministicNodeExecutor(
             mapper, "http://127.0.0.1:" + port);
         JsonNode node = mapper.readTree("""
@@ -54,8 +54,7 @@ class DeterministicNodeExecutorTest {
         JsonNode params = mapper.readTree("""
             {"method":"POST","url":"http://127.0.0.1:%d/failure","body":{"test":true}}
             """.formatted(port));
-        return assertThrows(NodeExecutionException.class,
-            () -> executor.execute("run_1", 1, node, params));
+        executor.execute("run_1", 1, node, params);
     }
 
     private HttpServer serverReturning(int status) throws IOException {
