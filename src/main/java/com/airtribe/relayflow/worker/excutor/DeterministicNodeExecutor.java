@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.airtribe.relayflow.worker.dto.NodeExecutionResult;
+import com.airtribe.relayflow.worker.exception.NodeExecutionException;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -169,44 +170,58 @@ public class DeterministicNodeExecutor {
 	}
 
 	private JsonNode send(String method, URI uri, JsonNode body, String idempotencyKey) {
-		/**
-		 * Sends an HTTP request to the specified URI with the given method and body.
-		 * 
-		 * @param method The HTTP method to use.
-		 * @param uri The URI to send the request to.
-		 * @param body The body of the request.
-		 * @param idempotencyKey The idempotency key for the request.
-		 * @return The response from the server.
-		 */
+		String serializedBody;
 		try {
-			HttpRequest.Builder request = HttpRequest.newBuilder(uri)
+			serializedBody = objectMapper.writeValueAsString(body);
+		} catch (IOException exception) {
+			throw new NodeExecutionException("Unable to encode HTTP node request", false, null, exception);
+		}
+
+		HttpRequest.Builder request;
+		try {
+			request = HttpRequest.newBuilder(uri)
 					.timeout(Duration.ofSeconds(15))
 					.header("Content-Type", "application/json");
-			if (idempotencyKey != null) {
-				request.header("Idempotency-Key", idempotencyKey);
-			}
-			HttpRequest.BodyPublisher publisher = method.equals("GET")
-					? HttpRequest.BodyPublishers.noBody()
-					: HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body));
-			HttpResponse<String> response = httpClient.send(
+		} catch (IllegalArgumentException exception) {
+			throw new NodeExecutionException("Invalid HTTP node request URI", false, null, exception);
+		}
+		if (idempotencyKey != null) {
+			request.header("Idempotency-Key", idempotencyKey);
+		}
+		HttpRequest.BodyPublisher publisher = method.equals("GET")
+				? HttpRequest.BodyPublishers.noBody()
+				: HttpRequest.BodyPublishers.ofString(serializedBody);
+
+		HttpResponse<String> response;
+		try {
+			response = httpClient.send(
 					request.method(method, publisher).build(), HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() < 200 || response.statusCode() >= 300) {
-				throw new IllegalStateException("HTTP request returned status " + response.statusCode());
-			}
-			JsonNode responseBody;
-			try {
-				responseBody = objectMapper.readTree(response.body());
-			} catch (Exception notJson) {
-				responseBody = objectMapper.getNodeFactory().textNode(response.body());
-			}
-			return objectMapper.createObjectNode()
-					.put("status", response.statusCode())
-					.set("body", responseBody);
 		} catch (IOException exception) {
-			throw new IllegalStateException("Unable to encode HTTP node request", exception);
+			// Connection failures and request timeouts are transient. The same
+			// idempotency key makes replay safe if the remote side already acted.
+			throw new NodeExecutionException("HTTP node transport failure: " + exception.getMessage(),
+					true, null, exception);
 		} catch (InterruptedException exception) {
 			Thread.currentThread().interrupt();
-			throw new IllegalStateException("HTTP node request was interrupted", exception);
+			throw new NodeExecutionException("HTTP node request was interrupted", true, null, exception);
 		}
+
+		int status = response.statusCode();
+		if (status < 200 || status >= 300) {
+			boolean retryable = status == 408 || status == 425 || status == 429
+					|| (status >= 500 && status <= 599);
+			throw new NodeExecutionException("HTTP request returned status " + status,
+					retryable, status);
+		}
+
+		JsonNode responseBody;
+		try {
+			responseBody = objectMapper.readTree(response.body());
+		} catch (Exception notJson) {
+			responseBody = objectMapper.getNodeFactory().textNode(response.body());
+		}
+		return objectMapper.createObjectNode()
+				.put("status", status)
+				.set("body", responseBody);
 	}
 }

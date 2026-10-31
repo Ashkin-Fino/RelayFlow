@@ -1,7 +1,7 @@
 # Phase 4 Development Report — Crash Recovery, Retries, and Idempotency
 
 **Milestone:** M4 — Recovery, retries, and idempotency  
-**Status:** Partially implemented. Lease recovery, restart recovery, and mock-world idempotency passed the local tests reported below. Durable transient retry/backoff is not implemented.
+**Status:** Retry implementation added on the feature branch; local build and runtime verification are pending. Lease recovery, restart recovery, and mock-world idempotency passed the earlier local tests reported below.
 
 ## Objective
 
@@ -64,8 +64,8 @@ The current worker records a permanent node execution failure by saving the fail
 | Crash after external side effect but before step persistence; replay uses the same key | Passed |
 | Mock-world ledger reports one execution and one absorbed replay, with no rejected entries | Passed |
 | Permanent external failure is persisted as failed step/run and completed queue job | Passed |
-| Bounded transient retries with exponential backoff | Not implemented |
-| Retry limit exhaustion and terminal failure after the limit | Not implemented |
+| Bounded transient retries with exponential backoff | Implemented on feature branch; runtime verification pending |
+| Retry limit exhaustion and terminal failure after the limit | Implemented on feature branch; runtime verification pending |
 | Supplied `duplication_check.py` acceptance script | Not yet recorded as run |
 
 The side-effect crash test reported this mock-world ledger result:
@@ -78,27 +78,56 @@ PASS: every side effect executed exactly once.
 
 This verifies the tested mock-world idempotency path. The receiving service's idempotency ledger is essential to that result.
 
-## Known gap — transient retry and backoff
+## Retry implementation
 
-**Durable per-node retry is not implemented in the current code.**
+A durable per-node retry flow has now been added on branch `feat/phase4-transient-retries`. Runtime verification is still pending.
 
-The current execution path catches a node exception, persists the step as failed, marks the run failed, and completes the queue job. The deterministic HTTP executor throws when the remote endpoint returns a non-2xx response. It does not classify transient and permanent failures or schedule a retry.
+### Failure classification
 
-The existing queue `attempts` counter must not be used as the node retry count because it increments for ordinary one-node-per-claim progression and lease recovery as well as any future retry. The `steps.attempt` column currently defaults to 1 and is not advanced by a retry flow.
+- Connection failures and HTTP request timeouts are classified as transient.
+- HTTP 408, 425, 429, and 5xx responses are transient.
+- Other non-2xx HTTP responses, request serialization errors, invalid request URIs, and node validation/execution errors are permanent.
+- A permanent failure immediately records the failed step, marks the run failed, and completes the queue job.
+- A transient failure is retried only while the per-node attempt count is below the configured maximum. Exhaustion records a terminal failed step/run.
 
-### Required follow-up implementation
+### Durable retry state
 
-1. Define a retry policy for transient failures, including connection failures/timeouts and selected HTTP statuses such as 408, 429, and 5xx. Treat permanent validation/business failures and other non-retryable 4xx responses as terminal.
-2. Track attempts for the logical node execution separately from queue claim count.
-3. Persist the failed attempt/error and next retry time.
-4. Reschedule the queue job using PostgreSQL `available_at` with bounded exponential backoff. Do not use `Thread.sleep()` or hold a database transaction during the wait.
-5. Keep the run active while a retry remains available; mark the step/run failed only after retry exhaustion or a permanent error.
-6. Reuse the exact same idempotency key for every attempt of the same run/node/sequence.
-7. Ensure a lease reclaim does not accidentally consume a node retry attempt.
-8. Test transient recovery, retry exhaustion, permanent failure, and crash during retry scheduling.
+- The existing `steps.attempt` column tracks attempts for one logical node execution.
+- The existing `steps.status = waiting` represents a failed attempt waiting for retry.
+- The existing queue `available_at` field stores the durable backoff deadline.
+- Saving the waiting step and rescheduling/releasing the queue lease happen in one database transaction.
+- The run remains `running` while a retry is pending.
+- A running step is persisted before an external request. If a worker crashes, the replacement worker resumes the same attempt rather than incrementing the retry count.
+- A waiting step increments its attempt only when the next attempt begins.
+- Queue `attempts` continues to count queue claims/reclaims; it is not used as the node retry budget.
+
+### Backoff configuration
+
+Defaults: 3 total attempts (including the initial attempt), 2-second initial delay, exponential doubling, and a 30-second maximum delay. This yields retry waits of 2 seconds and then 4 seconds for the default policy.
+
+Configure through:
+- `RELAY_WORKER_RETRY_MAX_ATTEMPTS`
+- `RELAY_WORKER_RETRY_INITIAL_DELAY_SECONDS`
+- `RELAY_WORKER_RETRY_MAX_DELAY_SECONDS`
+
+No sleeping thread or open database transaction is used during the delay. The PostgreSQL queue makes the retry eligible when `available_at` is reached.
+
+### Idempotency
+
+Every attempt for the same logical side-effect execution reuses `{run_id}:{node_id}:{sequence}`. The attempt number is never part of the key. The receiver's idempotency support remains necessary for safe replay after ambiguous network failures.
+
+### Automated tests added
+
+- HTTP 5xx is classified as transient.
+- HTTP 4xx is classified as permanent.
+- Worker schedules a transient failure using the expected first backoff.
+- Worker does not retry a permanent failure.
+- Retry exhaustion marks the step/run failed instead of scheduling another attempt.
+
+These tests have been added but have **not yet been run in the user's local environment**. Crash/restart during retry scheduling and the unchanged supplied duplication script still need runtime verification.
 
 ## Phase 4 status
 
-The lease and recovery portion of Phase 4 is locally verified for the reported kill/restart scenarios. Stable idempotency is verified against the mock-world ledger, including the crash window after a side effect and before database step persistence.
+The lease and recovery portion of Phase 4 is locally verified for the reported kill/restart scenarios. Stable idempotency is verified against the mock-world ledger, including the crash window after a side effect and before database step persistence. Durable transient retry/backoff and retry exhaustion are now implemented on the feature branch, but local build, automated test, and runtime recovery verification are pending.
 
-**Phase 4 remains partially complete until bounded durable transient retry/backoff and retry-exhaustion behavior are implemented and tested.** Retry support must not be described as complete yet.
+**Phase 4 remains partially complete until the new retry implementation passes local tests, including crash/restart during a scheduled retry.**
