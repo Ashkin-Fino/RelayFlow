@@ -64,12 +64,11 @@ public class WorkerExecutionService {
         RunEntity run = runs.findById(job.runId()).orElseThrow(() -> new RunNotFoundException(job.runId()));
 
         if (terminal(run.getStatus())) {
-            queue.complete(job.jobId(), job.leaseToken(), "Run is already terminal");
             return;
         }
 
         if ("waiting_approval".equals(run.getStatus())) {
-            queue.reschedule(job.jobId(), job.leaseToken(), 30);
+            queue.complete(job.jobId(), job.leaseToken(), "Run is waiting for approval");
             return;
         }
 
@@ -77,6 +76,13 @@ public class WorkerExecutionService {
             run = progress.start(run.getId());
         } else if (!"running".equals(run.getStatus())) {
             failRun(job, "invalid_run_state", "Unexpected run state: " + run.getStatus());
+            return;
+        }
+        if (terminal(run.getStatus())) {
+            return;
+        }
+        if (run.isCancelRequested()) {
+            progress.cancelAtBoundary(run.getId(), job.jobId(), job.leaseToken());
             return;
         }
 
@@ -136,7 +142,15 @@ public class WorkerExecutionService {
 
         // Persist the running attempt before making a potentially non-idempotent
         // external call. If the process dies, the lease reclaim reuses this attempt.
-        step = progress.prepareStep(step);
+        if (!progress.prepareStepForExecution(run.getId(), job.jobId(), job.leaseToken(), step)) {
+            return;
+        }
+
+        if ("approval".equals(nodeType)) {
+            progress.awaitApproval(run.getId(), job.jobId(), job.leaseToken(),
+                    step, resolved.path("message").asString());
+            return;
+        }
 
         long started = System.nanoTime();
         try {

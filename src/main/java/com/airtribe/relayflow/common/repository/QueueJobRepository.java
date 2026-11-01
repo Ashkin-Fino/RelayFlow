@@ -47,6 +47,29 @@ public class QueueJobRepository {
 	}
 
 	@Transactional
+	public void cancelQueuedRun(String runId) {
+		jdbcTemplate.update("""
+				UPDATE queue_jobs
+				SET status = 'cancelled', lease_owner = NULL, lease_expires_at = NULL,
+				    last_error = 'Run cancelled', updated_at = now()
+				WHERE run_id = ? AND status IN ('queued', 'leased')
+				""", runId);
+	}
+
+	@Transactional
+	public void requeueCompletedRun(String runId) {
+		int updated = jdbcTemplate.update("""
+				UPDATE queue_jobs
+				SET status = 'queued', available_at = now(), lease_owner = NULL,
+				    lease_expires_at = NULL, last_error = NULL, updated_at = now()
+				WHERE run_id = ? AND status = 'completed'
+				""", runId);
+		if (updated != 1) {
+			throw new IllegalStateException("Unable to resume run queue job: " + runId);
+		}
+	}
+
+	@Transactional
 	public Optional<ClaimedQueueJob> claimNext(String workerId, int leaseSeconds) {
 		/**
 		 * Claims the next available queue job for processing by a worker.
