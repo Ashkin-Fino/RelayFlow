@@ -43,7 +43,8 @@ class WorkerExecutionServiceTest {
 
         d.service.execute(d.job);
 
-        verify(d.progress).prepareStep(any(StepEntity.class));
+        verify(d.progress).prepareStepForExecution(eq("run_1"), eq(9L), eq("worker:lease"),
+            any(StepEntity.class));
         verify(d.progress).completeStep(eq("run_1"), eq(9L), eq("worker:lease"),
             any(StepEntity.class), isNull(), eq(0L));
     }
@@ -56,7 +57,8 @@ class WorkerExecutionServiceTest {
 
         d.service.execute(d.job);
 
-        verify(d.progress).prepareStep(any(StepEntity.class));
+        verify(d.progress).prepareStepForExecution(eq("run_1"), eq(9L), eq("worker:lease"),
+            any(StepEntity.class));
         verify(d.progress).retryStep(eq("run_1"), eq(9L), eq("worker:lease"),
             any(StepEntity.class), any(JsonNode.class), anyLong(), eq(2L));
         verify(d.progress, never()).failStep(eq("run_1"), eq(9L), eq("worker:lease"),
@@ -118,6 +120,42 @@ class WorkerExecutionServiceTest {
     }
 
     @Test
+    void approvalNodePersistsWaitStateWithoutExecutingAsRegularNode() {
+        RunRepository runs = mock(RunRepository.class);
+        StepRepository steps = mock(StepRepository.class);
+        QueueJobRepository queue = mock(QueueJobRepository.class);
+        RunProgressService progress = mock(RunProgressService.class);
+        DeterministicNodeExecutor executor = mock(DeterministicNodeExecutor.class);
+        NodeCatalog catalog = mock(NodeCatalog.class);
+        JsonNode definition = mapper.readTree("""
+            {"limits":{"max_steps":3},
+             "nodes":[{"id":"manager_gate","type":"approval","params":{"message":"Approve transfer?"},"next":"send"},
+                      {"id":"send","type":"notify","params":{},"next":null}]}
+            """);
+        RunEntity run = new RunEntity("run_1", "wf_test", definition, "manual",
+            mapper.createObjectNode(), "manager_gate");
+        when(runs.findById("run_1")).thenReturn(Optional.of(run));
+        when(progress.start("run_1")).thenAnswer(i -> {
+            run.start();
+            return run;
+        });
+        when(steps.findByRunIdOrderBySequenceAsc("run_1")).thenReturn(List.of());
+        when(steps.findByRunIdAndSequence("run_1", 1)).thenReturn(Optional.empty());
+        when(progress.prepareStepForExecution(eq("run_1"), eq(9L), eq("worker:lease"),
+                any(StepEntity.class))).thenReturn(true);
+        when(catalog.definition()).thenReturn(mapper.readTree("{\"nodes\":[]}"));
+        WorkerExecutionService service = new WorkerExecutionService(runs, steps, queue, progress,
+            executor, new TemplateResolver(mapper), catalog, mapper, 3, 2, 30);
+
+        service.execute(new ClaimedQueueJob(9L, "run_1", "worker:lease"));
+
+        verify(progress).awaitApproval(eq("run_1"), eq(9L), eq("worker:lease"),
+            argThat(step -> "manager_gate".equals(step.getNodeId())
+                && "approval".equals(step.getNodeType())), eq("Approve transfer?"));
+        verify(executor, never()).execute(anyString(), anyInt(), any(), any());
+    }
+
+    @Test
     void sensitiveNodeCannotExecuteWithoutEarlierApprovedApprovalStep() {
         RunRepository runs = mock(RunRepository.class);
         StepRepository steps = mock(StepRepository.class);
@@ -175,7 +213,8 @@ class WorkerExecutionServiceTest {
         });
         when(steps.findByRunIdOrderBySequenceAsc("run_1")).thenReturn(List.of(approval));
         when(steps.findByRunIdAndSequence("run_1", 2)).thenReturn(Optional.empty());
-        when(progress.prepareStep(any(StepEntity.class))).thenAnswer(i -> i.getArgument(0));
+        when(progress.prepareStepForExecution(eq("run_1"), eq(9L), eq("worker:lease"),
+                any(StepEntity.class))).thenReturn(true);
         when(catalog.definition()).thenReturn(mapper.readTree("""
             {"nodes":[{"type":"order_action","side_effect":true,"requires_approval":true}]}
             """));
@@ -211,7 +250,8 @@ class WorkerExecutionServiceTest {
         });
         when(steps.findByRunIdOrderBySequenceAsc("run_1")).thenReturn(List.of());
         when(steps.findByRunIdAndSequence("run_1", 1)).thenReturn(Optional.empty());
-        when(progress.prepareStep(any(StepEntity.class))).thenAnswer(i -> i.getArgument(0));
+        when(progress.prepareStepForExecution(eq("run_1"), eq(9L), eq("worker:lease"),
+                any(StepEntity.class))).thenReturn(true);
         when(catalog.definition()).thenReturn(mapper.readTree(
             "{\"nodes\":[{\"type\":\"notify\",\"side_effect\":true}]}"));
 

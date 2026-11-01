@@ -69,11 +69,18 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 - `POST /workflows/{workflowId}/trigger` triggers a published workflow which support manual trigger
 - `POST /hooks/{workflowId}` triggers a published which supports webhook trigger. Also requires a `X-Relay-Secret` header.
 
+### Approval and cancellation API
+
+- `GET /approvals?status=pending` lists pending approval requests. Other supported statuses are `approved`, `rejected`, and `cancelled`.
+- `POST /approvals/{approvalId}/approve` records the decision and resumes the run.
+- `POST /approvals/{approvalId}/reject` records the rejection and cancels the run. An optional JSON body may include a `reason`.
+- `POST /runs/{runId}/cancel` cancels a queued or approval-waiting run immediately, or requests cooperative cancellation of a running run. A running node is allowed to finish before the worker stops the run. Cancelling a terminal run returns `409`.
+
 ### Current implementation status
 
-Phases 1–5 are implemented. Phase 4 lease recovery, retry/backoff, and idempotency status is documented in [dev_report/phase_4.md](dev_report/phase_4.md). Phase 5 implements nested template resolution, AI provider calls, JSON Schema validation with exactly one repair call, persisted prompt/completion token usage, and a fail-closed sensitive-node guard. Automated tests pass; live testing with a real AI provider and prompt-injection payloads remains pending. See [dev_report/phase_5.md](dev_report/phase_5.md) for implementation and verification details.
+Phases 1–6 are implemented. Phase 4 lease recovery, retry/backoff, and idempotency status is documented in [dev_report/phase_4.md](dev_report/phase_4.md). Phase 5 implements nested template resolution, AI provider calls, JSON Schema validation with exactly one repair call, persisted prompt/completion token usage, and a fail-closed sensitive-node guard. Phase 6 adds persisted approval gates, decision endpoints, and cancellation behavior; see [dev_report/phase_6.md](dev_report/phase_6.md). Automated tests pass; live testing with a real AI provider and prompt-injection payloads remains pending. The run-trace API and console, smoke-test acceptance, and duplication-check acceptance are not yet complete.
 
-Approval-node lifecycle and APIs, cancellation, run-trace APIs, the console, and end-to-end live AI/injection verification remain outstanding. Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`; full approval workflow support is Phase 6. The full smoke-test and duplication-check acceptance results are not yet recorded as passing.
+Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`. Approval, rejection, and cancellation transitions are persisted in PostgreSQL and serialized against conflicting decisions.
 
 
 ## Worker runtime modes

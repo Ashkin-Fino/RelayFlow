@@ -22,6 +22,15 @@ public class TemplateResolver {
 	}
 
 	public JsonNode resolve(JsonNode value, JsonNode triggerBody, Map<String, JsonNode> nodeOutputs) {
+		/**
+		 * Resolves placeholders in the given JSON value using the provided 
+		 * trigger body and node outputs.
+		 * 
+		 * @param value The JSON value containing placeholders to resolve.
+		 * @param triggerBody The JSON body of the trigger event.
+		 * @param nodeOutputs A map of node IDs to their respective output JSON nodes.
+		 * @return A new JSON node with all placeholders resolved.
+		 */
 		if (value.isObject()) {
 			ObjectNode resolved = objectMapper.createObjectNode();
 			for (var property : value.properties()) {
@@ -63,6 +72,15 @@ public class TemplateResolver {
 	}
 
 	private JsonNode resolvePath(String expression, JsonNode triggerBody, Map<String, JsonNode> nodeOutputs) {
+		/**
+		 * Resolves a template path expression to a JSON node using the provided
+		 * trigger body and node outputs.
+		 * 
+		 * @param expression The template path expression to resolve.
+		 * @param triggerBody The JSON body of the trigger event.
+		 * @param nodeOutputs A map of node IDs to their respective output JSON nodes.
+		 * @return The resolved JSON node corresponding to the template path.
+		 */
 		String[] parts = expression.trim().split("\\.");
 		JsonNode current;
 		int index;

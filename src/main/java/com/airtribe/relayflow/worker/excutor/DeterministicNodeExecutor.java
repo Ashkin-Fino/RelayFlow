@@ -44,7 +44,8 @@ public class DeterministicNodeExecutor {
 		this(objectMapper, mockWorldUrl, null);
 	}
 
-	public NodeExecutionResult execute(String runId, int sequence, JsonNode node, JsonNode params) {
+	public NodeExecutionResult execute(String runId, int sequence, 
+			JsonNode node, JsonNode params) {
 		/**
 		 * Executes a node based on its type and parameters.
 		 *
@@ -71,6 +72,15 @@ public class DeterministicNodeExecutor {
 	}
 
 	private NodeExecutionResult executeAi(JsonNode node, JsonNode params) {
+		/**
+		 * Executes an AI node by delegating to the AiNodeExecutor.
+		 * 
+		 * @param node The node definition containing the AI details.
+		 * @param params The resolved parameters for the AI node.
+		 * @return The result of the AI node execution, including the 
+		 *         output and the next node to proceed to.
+		 * @throws IllegalStateException if the AiNodeExecutor is not configured.
+		 */
 		if (aiNodeExecutor == null) {
 			throw new IllegalStateException("AI node execution is not configured");
 		}
@@ -79,11 +89,13 @@ public class DeterministicNodeExecutor {
 
 	private NodeExecutionResult executeCondition(JsonNode node, JsonNode params) {
 		/**
-		 * Executes a condition node by evaluating the specified operation on the left and right parameters.
+		 * Executes a condition node by evaluating the specified operation on the 
+		 * left and right parameters.
 		 * 
 		 * @param node The node definition containing the condition details.
 		 * @param params The resolved parameters for the condition node.
-		 * @return The result of the condition node execution, including the output and the next branch to follow.
+		 * @return The result of the condition node execution, including 
+		 *         the output and the next branch to follow.
 		 */
 		String left = params.path("left").asString();
 		String right = params.path("right").asString();
@@ -188,6 +200,16 @@ public class DeterministicNodeExecutor {
 	}
 
 	private JsonNode send(String method, URI uri, JsonNode body, String idempotencyKey) {
+		/**
+		 * Sends an HTTP request to the specified URI with the given method, body, 
+		 * and idempotency key.
+		 * 
+		 * @param method The HTTP method (GET, POST, etc.).
+		 * @param uri The URI to send the request to.
+		 * @param body The JSON body of the request.
+		 * @param idempotencyKey The idempotency key for the request to ensure safe retries.
+		 * @return The JSON response from the HTTP request.
+		 */
 		String serializedBody;
 		try {
 			serializedBody = objectMapper.writeValueAsString(body);
