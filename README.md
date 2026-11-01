@@ -78,7 +78,7 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 ### Current implementation status
 
-Phases 1–6 are implemented. Phase 4 lease recovery, retry/backoff, and idempotency status is documented in [dev_report/phase_4.md](dev_report/phase_4.md). Phase 5 implements nested template resolution, AI provider calls, JSON Schema validation with exactly one repair call, persisted prompt/completion token usage, and a fail-closed sensitive-node guard. Phase 6 adds persisted approval gates, decision endpoints, and cancellation behavior; see [dev_report/phase_6.md](dev_report/phase_6.md). Automated tests pass; live testing with a real AI provider and prompt-injection payloads remains pending. The run-trace API and console, smoke-test acceptance, and duplication-check acceptance are not yet complete.
+Phases 1–6 are implemented, with all 55 automated tests passing. Live testing with a real AI provider and prompt-injection payloads remains pending. The run-trace API and console, smoke-test acceptance, and duplication-check acceptance are not yet complete.
 
 Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`. Approval, rejection, and cancellation transitions are persisted in PostgreSQL and serialized against conflicting decisions.
 

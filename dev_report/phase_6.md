@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 6 approval gates and cancellation semantics are implemented.
+**Completed.** Phase 6 approval gates and cancellation semantics are implemented and covered by passing automated tests.
 
 ## Implemented
 
@@ -18,11 +18,11 @@ Phase 6 approval gates and cancellation semantics are implemented.
 
 - `.\mvnw.cmd compile` — passed.
 - Focused approval, cancellation, and worker tests — passed.
-- `.\mvnw.cmd package` — passed; 55 tests, no failures or errors. The application context test also passed against the configured database.
+- `.\mvnw.cmd package` — passed; all 55 tests passed with no failures or errors. The application context test also passed against the configured database.
 - `git diff --check` — passed.
 
 ## Remaining work
 
 - The Phase 7 run-trace API and console are not implemented.
 - Real-provider AI and prompt-injection testing remains pending from Phase 5.
-- The unchanged smoke test and kill/resume duplication check have not yet been run as end-to-end acceptance tests.
+- The unchanged smoke test and kill/resume duplication check remain project-level end-to-end acceptance work; they do not block Phase 6 completion.
