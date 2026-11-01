@@ -39,6 +39,7 @@ One node per claim keeps leases short. Delay is represented by a future queue av
 - delay: returns a delay duration and reschedules the job using PostgreSQL available_at.
 - notify: sends email or chat notifications to the unchanged mock-world service.
 - http_request: sends the configured HTTP request and captures the response.
+- order_action: dispatches refunds and replacements to the mock-world order endpoints. Refund amount is optional (omitted for full refunds); replacement requests send an empty JSON object. The response is persisted as the node output, and the request uses the run/node/sequence idempotency key. Worker approval enforcement blocks this sensitive node until an earlier approval succeeds.
 
 Side-effect requests use the stable key {run_id}:{node_id}:{sequence}. Unsupported node types fail explicitly.
 
@@ -74,6 +75,11 @@ The following results were reported from local testing:
 | Delay node schedules the next node without blocking for the delay duration | Passed |
 | wf_runaway stops at max_steps=12 with max_steps_exceeded | Passed |
 | Permanent mock-world failure is persisted as failed step and run, with queue job completed | Passed |
+| order_action partial and full refund request bodies | Passed |
+| order_action replacement route and request body | Passed |
+| order_action response output and idempotency header | Passed |
+| Unsupported order_action rejected before making a request | Passed |
+| Focused executor and worker tests after order_action implementation | Passed (14 tests) |
 | Manual and webhook route implementations | Implemented; webhook runtime test not recorded here |
 | Supplied smoke_test.py | Not yet recorded as run |
 | Supplied duplication_check.py | Not yet recorded as run |
@@ -87,12 +93,11 @@ Permanent-failure database verification confirmed all three expected records: fa
 - Durable transient-failure retry and exponential backoff.
 - AI provider execution and structured output validation/repair.
 - Approval lifecycle and engine-enforced approval evidence.
-- order_action execution.
 - Run cancellation.
 - Complete run/step trace API and console.
 - Full unchanged smoke-test and duplication-check acceptance runs.
 
-Phase 3 is locally verified for the tested trigger/queue/worker paths, but the project is not overall acceptance-complete.
+`order_action` execution was subsequently completed and verified by focused executor and worker tests; approval gating is enforced by the worker. Phase 3 is locally verified for the tested trigger/queue/worker paths, but the project is not overall acceptance-complete.
 
 ## 6. Local run modes
 

@@ -67,6 +67,7 @@ public class DeterministicNodeExecutor {
 			case "notify" -> executeNotify(runId, sequence, node, nodeId, params);
 			case "http_request" -> executeHttpRequest(runId, sequence, node, nodeId, params);
 			case "ai" -> executeAi(node, params);
+			case "order_action" -> executeOrderAction(runId, sequence, node, nodeId, params);
 			default -> throw new IllegalStateException("Node type '" + nodeType + "' is not implemented by this worker");
 		};
 	}
@@ -172,6 +173,44 @@ public class DeterministicNodeExecutor {
 		body.set("message", params.path("message").deepCopy());
 		JsonNode response = send("POST", mockWorldUrl.resolve(path), body,
 				runId + ":" + nodeId + ":" + sequence);
+		String next = node.path("next").isNull() ? null : node.path("next").asString();
+		return NodeExecutionResult.next(response.path("body"), next);
+	}
+
+	private NodeExecutionResult executeOrderAction(String runId, int sequence, JsonNode node,
+			String nodeId, JsonNode params) {
+		String action = params.path("action").asString();
+		String orderId = params.path("order_id").asString();
+		if (orderId.isBlank()) {
+			throw new IllegalStateException("order_action requires a non-blank order_id");
+		}
+
+		ObjectNode body = objectMapper.createObjectNode();
+		String actionPath;
+		switch (action) {
+			case "refund" -> {
+				actionPath = "refund";
+				JsonNode amount = params.path("amount_usd");
+				if (!amount.isMissingNode() && !amount.isNull()) {
+					if (!amount.isNumber() || amount.asDouble() <= 0) {
+						throw new IllegalStateException("Refund amount_usd must be a positive number");
+					}
+					body.set("amount_usd", amount.deepCopy());
+				}
+			}
+			case "replacement" -> {
+				if (params.has("amount_usd")) {
+					throw new IllegalStateException("amount_usd is only supported for refund actions");
+				}
+				actionPath = "replacement";
+			}
+			default -> throw new IllegalStateException("Unsupported order_action '" + action + "'");
+		}
+
+		String encodedOrderId = java.net.URLEncoder.encode(orderId, java.nio.charset.StandardCharsets.UTF_8)
+				.replace("+", "%20");
+		URI uri = mockWorldUrl.resolve("/orders/" + encodedOrderId + "/" + actionPath);
+		JsonNode response = send("POST", uri, body, runId + ":" + nodeId + ":" + sequence);
 		String next = node.path("next").isNull() ? null : node.path("next").asString();
 		return NodeExecutionResult.next(response.path("body"), next);
 	}
