@@ -6,7 +6,10 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -112,6 +115,80 @@ class WorkerExecutionServiceTest {
             any(StepEntity.class), any(JsonNode.class));
         verify(d.progress, never()).retryStep(eq("run_1"), eq(9L), eq("worker:lease"),
             any(StepEntity.class), any(JsonNode.class), anyLong(), anyLong());
+    }
+
+    @Test
+    void sensitiveNodeCannotExecuteWithoutEarlierApprovedApprovalStep() {
+        RunRepository runs = mock(RunRepository.class);
+        StepRepository steps = mock(StepRepository.class);
+        QueueJobRepository queue = mock(QueueJobRepository.class);
+        RunProgressService progress = mock(RunProgressService.class);
+        DeterministicNodeExecutor executor = mock(DeterministicNodeExecutor.class);
+        NodeCatalog catalog = mock(NodeCatalog.class);
+        JsonNode definition = mapper.readTree("""
+            {"limits":{"max_steps":3},
+             "nodes":[{"id":"refund","type":"order_action","params":{"action":"refund"},"next":null}]}
+            """);
+        RunEntity run = new RunEntity("run_1", "wf_test", definition, "manual",
+            mapper.createObjectNode(), "refund");
+        when(runs.findById("run_1")).thenReturn(Optional.of(run));
+        when(progress.start("run_1")).thenAnswer(i -> {
+            run.start();
+            return run;
+        });
+        when(steps.findByRunIdOrderBySequenceAsc("run_1")).thenReturn(List.of());
+        when(catalog.definition()).thenReturn(mapper.readTree("""
+            {"nodes":[{"type":"order_action","requires_approval":true}]}
+            """));
+        WorkerExecutionService service = new WorkerExecutionService(runs, steps, queue, progress,
+            executor, new TemplateResolver(mapper), catalog, mapper, 3, 2, 30);
+
+        service.execute(new ClaimedQueueJob(9L, "run_1", "worker:lease"));
+
+        verify(progress).failRun(eq("run_1"), eq(9L), eq("worker:lease"),
+            argThat(error -> "approval_required".equals(error.path("code").asString())));
+        verify(executor, never()).execute(anyString(), anyInt(), any(), any());
+    }
+
+    @Test
+    void sensitiveNodeRequiresApprovalOutputToExplicitlySayApproved() {
+        RunRepository runs = mock(RunRepository.class);
+        StepRepository steps = mock(StepRepository.class);
+        QueueJobRepository queue = mock(QueueJobRepository.class);
+        RunProgressService progress = mock(RunProgressService.class);
+        DeterministicNodeExecutor executor = mock(DeterministicNodeExecutor.class);
+        NodeCatalog catalog = mock(NodeCatalog.class);
+        JsonNode definition = mapper.readTree("""
+            {"limits":{"max_steps":3},
+             "nodes":[{"id":"refund","type":"order_action","params":{"action":"refund"},"next":null}]}
+            """);
+        RunEntity run = new RunEntity("run_1", "wf_test", definition, "manual",
+            mapper.createObjectNode(), "refund");
+        run.advance("refund");
+        StepEntity approval = new StepEntity("run_1", "manager_gate", "approval", 1,
+            mapper.createObjectNode(), null);
+        approval.succeed(mapper.createObjectNode().put("decision", "approved"), 1);
+        when(runs.findById("run_1")).thenReturn(Optional.of(run));
+        when(progress.start("run_1")).thenAnswer(i -> {
+            run.start();
+            return run;
+        });
+        when(steps.findByRunIdOrderBySequenceAsc("run_1")).thenReturn(List.of(approval));
+        when(steps.findByRunIdAndSequence("run_1", 2)).thenReturn(Optional.empty());
+        when(progress.prepareStep(any(StepEntity.class))).thenAnswer(i -> i.getArgument(0));
+        when(catalog.definition()).thenReturn(mapper.readTree("""
+            {"nodes":[{"type":"order_action","side_effect":true,"requires_approval":true}]}
+            """));
+        when(executor.execute(eq("run_1"), eq(2), any(JsonNode.class), any(JsonNode.class)))
+            .thenReturn(NodeExecutionResult.next(mapper.createObjectNode().put("status", "refunded"), null));
+        WorkerExecutionService service = new WorkerExecutionService(runs, steps, queue, progress,
+            executor, new TemplateResolver(mapper), catalog, mapper, 3, 2, 30);
+
+        service.execute(new ClaimedQueueJob(9L, "run_1", "worker:lease"));
+
+        verify(executor).execute(eq("run_1"), eq(2), any(JsonNode.class), any(JsonNode.class));
+        verify(progress).completeStep(eq("run_1"), eq(9L), eq("worker:lease"),
+            any(StepEntity.class), isNull(), eq(0L));
     }
 
     private TestDependencies dependencies() {

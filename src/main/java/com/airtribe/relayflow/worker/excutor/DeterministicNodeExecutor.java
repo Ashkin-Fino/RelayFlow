@@ -10,8 +10,10 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.airtribe.relayflow.worker.ai.AiNodeExecutor;
 import com.airtribe.relayflow.worker.dto.NodeExecutionResult;
 import com.airtribe.relayflow.worker.exception.NodeExecutionException;
 
@@ -25,14 +27,21 @@ public class DeterministicNodeExecutor {
 	private final ObjectMapper objectMapper;
 	private final HttpClient httpClient;
 	private final URI mockWorldUrl;
+	private final AiNodeExecutor aiNodeExecutor;
 
 	private static final Logger log = LoggerFactory.getLogger(DeterministicNodeExecutor.class);
 
+	@Autowired
 	public DeterministicNodeExecutor(ObjectMapper objectMapper,
-			@Value("${relay.mock-world.url}") String mockWorldUrl) {
+			@Value("${relay.mock-world.url}") String mockWorldUrl, AiNodeExecutor aiNodeExecutor) {
 		this.objectMapper = objectMapper;
 		this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 		this.mockWorldUrl = URI.create(mockWorldUrl);
+		this.aiNodeExecutor = aiNodeExecutor;
+	}
+
+	public DeterministicNodeExecutor(ObjectMapper objectMapper, String mockWorldUrl) {
+		this(objectMapper, mockWorldUrl, null);
 	}
 
 	public NodeExecutionResult execute(String runId, int sequence, JsonNode node, JsonNode params) {
@@ -56,8 +65,16 @@ public class DeterministicNodeExecutor {
 			case "delay" -> executeDelay(node, params);
 			case "notify" -> executeNotify(runId, sequence, node, nodeId, params);
 			case "http_request" -> executeHttpRequest(runId, sequence, node, nodeId, params);
+			case "ai" -> executeAi(node, params);
 			default -> throw new IllegalStateException("Node type '" + nodeType + "' is not implemented by this worker");
 		};
+	}
+
+	private NodeExecutionResult executeAi(JsonNode node, JsonNode params) {
+		if (aiNodeExecutor == null) {
+			throw new IllegalStateException("AI node execution is not configured");
+		}
+		return aiNodeExecutor.execute(node, params);
 	}
 
 	private NodeExecutionResult executeCondition(JsonNode node, JsonNode params) {

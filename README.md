@@ -35,13 +35,14 @@ $env:MOCK_WORLD_URL = 'http://localhost:9210'
 $env:RELAY_AI_ADAPTER = 'mock'
 $env:RELAY_AI_BASE_URL = 'http://localhost:9001/v1'
 $env:RELAY_AI_MODEL = 'alpha-small'
-# Set for a real provider; a future HTTP adapter can use any dummy bearer key with mock_provider.py.
+# Supply a provider key (or a non-empty local mock key) through the environment only.
 $env:RELAY_AI_API_KEY = '<provider or local mock key>'
+$env:RELAY_AI_TIMEOUT_SECONDS = '30'
 .\mvnw.cmd clean package
 java -jar target\relayflow-0.0.1-SNAPSHOT.jar
 ```
 
-The AI settings are currently configuration placeholders. AI node execution and provider calls are not implemented yet. Keep real provider keys in environment variables only. The app applies `src/main/resources/db/migration` through Flyway and inserts the four canonical seed workflows as Published. Seed inserts are conflict-safe and do not overwrite an existing workflow on restart. Set `RELAY_SEED_ENABLED=false` to disable seed insertion. `SERVER_PORT` overrides the default API port `8080`.
+AI nodes use an OpenAI-compatible chat-completions endpoint at `<RELAY_AI_BASE_URL>/chat/completions`. The configured model must return JSON in the assistant message. Provider calls have a configurable timeout, and credentials are sent only as bearer authentication; prompts and keys are not written to logs or traces. `RELAY_AI_ADAPTER` accepts `mock` or `real`; both use the same HTTP protocol and differ only by the endpoint/key you configure. Keep real provider keys in environment variables only. The app applies `src/main/resources/db/migration` through Flyway and inserts the four canonical seed workflows as Published. Seed inserts are conflict-safe and do not overwrite an existing workflow on restart. Set `RELAY_SEED_ENABLED=false` to disable seed insertion. `SERVER_PORT` overrides the default API port `8080`.
 
 Run the mock world in another terminal:
 
@@ -70,31 +71,32 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 ### Current implementation status
 
-Phases 1 and 2 are implemented. Phase 3 manual/webhook trigger, PostgreSQL queue, worker execution, durable delay, and max_steps enforcement are implemented and the local scenarios are documented in `dev_report/phase_3.md`. Phase 4 lease recovery and idempotency have passed the reported local crash/restart drills. Durable transient retry/backoff is also implemented and tested. 
+Phases 1–4 are implemented; Phase 4 lease recovery, retry/backoff, and idempotency status is documented in [dev_report/phase_4.md](dev_report/phase_4.md). Phase 5 adds nested template resolution, AI provider calls, JSON Schema validation with exactly one repair call, and persisted prompt/completion token usage. See [dev_report/phae_5.md](dev_report/phae_5.md) for implementation and verification details.
 
-AI execution, approvals, order_action, cancellation, complete run-trace APIs, and the React console remain outstanding. The full smoke-test and duplication-check acceptance results are not yet recorded as passing.
+Approval-node lifecycle and APIs, cancellation, run-trace APIs, the console, and end-to-end live AI/injection verification remain outstanding. Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`; full approval workflow support is Phase 6. The full smoke-test and duplication-check acceptance results are not yet recorded as passing.
 
 
 ## Worker runtime modes
 
 The worker is enabled by default. The normal JAR command starts API and worker together. 
 
+```cmd
 java -jar target\relayflow-0.0.1-SNAPSHOT.jar --relay.worker.id=worker-m1 --server.port=8080
+```
 
 
 To run API-only:
 
-```powershell
+```cmd
 java -jar target\relayflow-0.0.1-SNAPSHOT.jar --relay.worker.enabled=false
 ```
 
 To run worker-only (same JAR and same PostgreSQL database):
 
-```powershell
+```cmd
 java -jar target\relayflow-0.0.1-SNAPSHOT.jar --spring.main.web-application-type=none --relay.worker.enabled=true --relay.worker.id=worker-1
 ```
 
 The worker polls every 1,000 ms by default and uses a 60-second queue lease. These can be configured with RELAY_WORKER_POLL_INTERVAL_MS and RELAY_WORKER_LEASE_SECONDS. SERVER_PORT overrides the API port.
 
 Per-node retries are configured with `RELAY_WORKER_RETRY_MAX_ATTEMPTS` (default 3 total attempts), `RELAY_WORKER_RETRY_INITIAL_DELAY_SECONDS` (default 2), and `RELAY_WORKER_RETRY_MAX_DELAY_SECONDS` (default 30). Backoff doubles after each failed attempt and is stored using the PostgreSQL queue availability timestamp.
-

@@ -7,6 +7,8 @@ package com.airtribe.relayflow.worker.exception;
 public class NodeExecutionException extends RuntimeException {
     private final boolean retryable;
     private final Integer httpStatus;
+    private final Integer tokensPrompt;
+    private final Integer tokensCompletion;
 
     public NodeExecutionException(String message, boolean retryable) {
         this(message, retryable, null, null);
@@ -17,9 +19,16 @@ public class NodeExecutionException extends RuntimeException {
     }
 
     public NodeExecutionException(String message, boolean retryable, Integer httpStatus, Throwable cause) {
+        this(message, retryable, httpStatus, cause, null, null);
+    }
+
+    public NodeExecutionException(String message, boolean retryable, Integer httpStatus, Throwable cause,
+            Integer tokensPrompt, Integer tokensCompletion) {
         super(message, cause);
         this.retryable = retryable;
         this.httpStatus = httpStatus;
+        this.tokensPrompt = tokensPrompt;
+        this.tokensCompletion = tokensCompletion;
     }
 
     public boolean isRetryable() {
@@ -28,5 +37,13 @@ public class NodeExecutionException extends RuntimeException {
 
     public Integer getHttpStatus() {
         return httpStatus;
+    }
+
+    public Integer getTokensPrompt() {
+        return tokensPrompt;
+    }
+
+    public Integer getTokensCompletion() {
+        return tokensCompletion;
     }
 }

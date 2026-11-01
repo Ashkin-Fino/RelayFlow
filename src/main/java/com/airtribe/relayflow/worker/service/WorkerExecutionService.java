@@ -95,8 +95,14 @@ public class WorkerExecutionService {
 
         String nodeId = node.path("id").asString();
         String nodeType = node.path("type").asString();
+        var priorSteps = steps.findByRunIdOrderBySequenceAsc(run.getId());
+        if (requiresApproval(nodeType) && !hasPriorApproval(priorSteps, sequence)) {
+            failRun(job, "approval_required",
+                "Node " + nodeId + " requires an earlier approved approval step");
+            return;
+        }
         Map<String, JsonNode> outputs = new LinkedHashMap<>();
-        steps.findByRunIdOrderBySequenceAsc(run.getId()).stream()
+        priorSteps.stream()
             .filter(s -> "succeeded".equals(s.getStatus()) && s.getOutput() != null)
             .forEach(s -> outputs.put(s.getNodeId(), s.getOutput()));
 
@@ -135,7 +141,8 @@ public class WorkerExecutionService {
         long started = System.nanoTime();
         try {
             NodeExecutionResult result = executor.execute(run.getId(), sequence, node, resolved);
-            step.succeed(result.output(), (System.nanoTime() - started) / 1_000_000);
+            step.succeed(result.output(), (System.nanoTime() - started) / 1_000_000,
+                result.tokensPrompt(), result.tokensCompletion());
             progress.completeStep(run.getId(), job.jobId(), job.leaseToken(),
                 step, result.nextNodeId(), result.delaySeconds());
         } catch (RuntimeException ex) {
@@ -148,6 +155,9 @@ public class WorkerExecutionService {
                 .put("retryable", retryable);
             if (classified != null && classified.getHttpStatus() != null) {
                 err.put("http_status", classified.getHttpStatus());
+            }
+            if (classified != null) {
+                step.addTokenUsage(classified.getTokensPrompt(), classified.getTokensCompletion());
             }
 
             if (retryable && step.getAttempt() < maxAttempts) {
@@ -203,6 +213,28 @@ public class WorkerExecutionService {
             }
         }
         return null;
+    }
+
+    private boolean requiresApproval(String nodeType) {
+        for (JsonNode definition : catalog.definition().path("nodes")) {
+            if (nodeType.equals(definition.path("type").asString())) {
+                return definition.path("requires_approval").asBoolean(false);
+            }
+        }
+        return false;
+    }
+
+    private boolean hasPriorApproval(Iterable<StepEntity> priorSteps, int currentSequence) {
+        for (StepEntity step : priorSteps) {
+            if (step.getSequence() < currentSequence
+                    && "approval".equals(step.getNodeType())
+                    && "succeeded".equals(step.getStatus())
+                    && "approved".equals(step.getOutput() == null
+                            ? null : step.getOutput().path("decision").asString(null))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void failRun(ClaimedQueueJob job, String code, String message) {

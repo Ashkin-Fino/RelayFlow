@@ -47,6 +47,7 @@ public class RunProgressService {
             String nextNodeId, long delaySeconds) {
         RunEntity run = runRepository.findById(runId).orElseThrow(() -> new RunNotFoundException(runId));
         stepRepository.save(step);
+        run.addAiTokensUsed(tokenCount(step));
         run.advance(nextNodeId);
         if (nextNodeId == null) {
             run.succeed();
@@ -76,6 +77,7 @@ public class RunProgressService {
     public void failStep(String runId, long jobId, String leaseToken, StepEntity step, JsonNode error) {
         RunEntity run = runRepository.findById(runId).orElseThrow(() -> new RunNotFoundException(runId));
         stepRepository.save(step);
+        run.addAiTokensUsed(tokenCount(step));
         run.fail(error);
         runRepository.save(run);
         queueJobRepository.complete(jobId, leaseToken, error.path("message").asString());
@@ -87,5 +89,10 @@ public class RunProgressService {
         run.fail(error);
         runRepository.save(run);
         queueJobRepository.complete(jobId, leaseToken, error.path("message").asString());
+    }
+
+    private long tokenCount(StepEntity step) {
+        return (long) (step.getTokensPrompt() == null ? 0 : step.getTokensPrompt())
+                + (step.getTokensCompletion() == null ? 0 : step.getTokensCompletion());
     }
 }

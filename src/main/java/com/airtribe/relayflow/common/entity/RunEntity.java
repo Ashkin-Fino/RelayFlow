@@ -116,6 +116,10 @@ public class RunEntity {
         return stepsExecuted; 
     }
 
+	public long getAiTokensUsed() {
+		return aiTokensUsed;
+	}
+
 	public boolean isCancelRequested() { 
         return cancelRequested; 
     }
@@ -142,6 +146,13 @@ public class RunEntity {
 	public void advance(String nextNodeId) {
 		this.currentNodeId = nextNodeId;
 		this.stepsExecuted++;
+	}
+
+	public void addAiTokensUsed(long tokens) {
+		if (tokens < 0) {
+			throw new IllegalArgumentException("AI token usage cannot be negative");
+		}
+		this.aiTokensUsed = Math.addExact(this.aiTokensUsed, tokens);
 	}
 
 	public void succeed() {

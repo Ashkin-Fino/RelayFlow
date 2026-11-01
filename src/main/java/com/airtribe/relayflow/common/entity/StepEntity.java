@@ -54,6 +54,12 @@ public class StepEntity {
     @Column(name = "idempotency_key")
     private String idempotencyKey;
 
+    @Column(name = "tokens_prompt")
+    private Integer tokensPrompt;
+
+    @Column(name = "tokens_completion")
+    private Integer tokensCompletion;
+
     @CreationTimestamp
     @Column(name = "started_at", nullable = false, updatable = false)
     private Instant startedAt;
@@ -83,6 +89,10 @@ public class StepEntity {
         return nodeId;
     }
 
+    public String getNodeType() {
+        return nodeType;
+    }
+
     public String getRunId() {
         return runId;
     }
@@ -103,8 +113,20 @@ public class StepEntity {
         return attempt;
     }
 
+    public int getSequence() {
+        return sequence;
+    }
+
     public String getIdempotencyKey() {
         return idempotencyKey;
+    }
+
+    public Integer getTokensPrompt() {
+        return tokensPrompt;
+    }
+
+    public Integer getTokensCompletion() {
+        return tokensCompletion;
     }
 
     /**
@@ -131,17 +153,41 @@ public class StepEntity {
     }
 
     public void succeed(JsonNode output, long durationMs) {
+        succeed(output, durationMs, null, null);
+    }
+
+    public void succeed(JsonNode output, long durationMs, Integer promptTokens, Integer completionTokens) {
         this.output = output;
         this.error = null;
         this.status = "succeeded";
         this.durationMs = durationMs;
         this.finishedAt = Instant.now();
+        addTokenUsage(promptTokens, completionTokens);
     }
 
     public void fail(JsonNode error, long durationMs) {
+        fail(error, durationMs, null, null);
+    }
+
+    public void fail(JsonNode error, long durationMs, Integer promptTokens, Integer completionTokens) {
         this.error = error;
         this.status = "failed";
         this.durationMs = durationMs;
         this.finishedAt = Instant.now();
+        addTokenUsage(promptTokens, completionTokens);
+    }
+
+    public void addTokenUsage(Integer promptTokens, Integer completionTokens) {
+        if ((promptTokens != null && promptTokens < 0)
+                || (completionTokens != null && completionTokens < 0)) {
+            throw new IllegalArgumentException("AI token usage cannot be negative");
+        }
+        if (promptTokens != null) {
+            this.tokensPrompt = Math.addExact(this.tokensPrompt == null ? 0 : this.tokensPrompt, promptTokens);
+        }
+        if (completionTokens != null) {
+            this.tokensCompletion = Math.addExact(
+                    this.tokensCompletion == null ? 0 : this.tokensCompletion, completionTokens);
+        }
     }
 }

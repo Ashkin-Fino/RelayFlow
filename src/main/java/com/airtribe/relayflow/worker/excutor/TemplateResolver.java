@@ -77,7 +77,19 @@ public class TemplateResolver {
 		}
 
 		for (; index < parts.length && current != null; index++) {
-			current = current.path(parts[index]);
+			String part = parts[index];
+			if (current.isArray()) {
+				try {
+					int arrayIndex = Integer.parseInt(part);
+					current = arrayIndex < 0 ? null : current.get(arrayIndex);
+				} catch (NumberFormatException exception) {
+					current = null;
+				}
+			} else if (current.isObject()) {
+				current = current.get(part);
+			} else {
+				current = null;
+			}
 		}
 		if (current == null || current.isMissingNode() || current.isNull()) {
 			throw new IllegalArgumentException("Unresolved template path '{{" + expression + "}}'");
