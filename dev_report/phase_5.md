@@ -1,7 +1,7 @@
 # Phase 5 Development Report — AI, Templates, and Guardrails
 
 **Milestone:** M5 — AI and template resolution  
-**Status:** Implemented for AI execution, schema enforcement, token accounting, nested templates, and sensitive-node guard. End-to-end provider/injection verification is pending.
+**Status: PHASE 5 IMPLEMENTATION COMPLETE.** AI execution, schema enforcement, token accounting, nested templates, and the sensitive-node guard are implemented and covered by automated tests. Live testing with a real AI provider remains pending.
 
 ## Context review
 
@@ -31,15 +31,15 @@ Focused command:
 .\mvnw.cmd "-Dtest=AiNodeExecutorTest,OpenAiCompatibleAiProviderClientTest,TemplateResolverTest,DeterministicNodeExecutorTest,WorkerExecutionServiceTest" test
 ```
 
-Result: **PASS**, 17 tests. Coverage includes valid AI output and token usage, one schema-repair call, terminal schema failure after two calls, rejection of remote schema references, denial of AI output that attempts to claim approval, OpenAI-compatible request/auth/usage handling, nested object/array templates, unresolved paths, provider-independent deterministic execution, existing worker retry behavior, and both denial and allowance cases for the sensitive-node approval guard.
+Result: **PASS**. Coverage includes valid AI output and token usage, one schema-repair call, terminal schema failure after two calls, rejection of remote schema references, denial of AI output that attempts to claim approval, OpenAI-compatible request/auth/usage handling, nested object/array templates, unresolved paths, provider-independent deterministic execution, existing worker retry behavior, and both denial and allowance cases for the sensitive-node approval guard.
 
 The first test run found an invalid test template (`nodes.classify.output` omitted a required path component); the test was corrected to reference `nodes.classify.output.category`. The first run of the new guard tests then exposed a missing step-type accessor, which was added; the final focused suite passes.
 
-Full verification: `.\mvnw.cmd package` **PASS**, 43 tests passed, zero failures/errors; `python scripts/validate_pack.py` **PASS** (7 node types, 3 trigger types, 4 seed workflows, 8 sample payloads, and 15 NL evaluation cases); `git diff --check` **PASS**.
+Full verification: `.\mvnw.cmd package` **PASS**, 46 tests passed, zero failures/errors; `python scripts/validate_pack.py` **PASS** (7 node types, 3 trigger types, 4 seed workflows, 8 sample payloads, and 15 NL evaluation cases); `git diff --check` **PASS**.
 
 ## Remaining verification and limitations
 
-- Live integration against an OpenAI-compatible model and the sample prompt-injection payloads has not been run.
+- **Pending:** live integration against a real OpenAI-compatible AI provider, including the sample prompt-injection payloads.
 - The bundled `mock_provider.py` emits generic prose rather than schema-shaped classifications, so it is not sufficient for the seeded triage workflow's structured output without a provider/test double that returns the requested JSON.
 - The approval lifecycle/API and run trace API are not implemented yet; token persistence is in place but there is not yet a user-facing trace endpoint.
-- Supplied smoke and duplication acceptance scripts have not been recorded as passing.
+- Supplied smoke and duplication acceptance scripts have not been recorded as passing; those remain end-to-end acceptance work beyond Phase 5.

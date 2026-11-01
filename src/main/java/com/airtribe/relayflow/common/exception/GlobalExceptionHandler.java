@@ -2,6 +2,8 @@ package com.airtribe.relayflow.common.exception;
 
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
 	@ExceptionHandler(WorkflowDefinitionException.class)
 	public ResponseEntity<Map<String, Object>> invalidDefinition(WorkflowDefinitionException exception) {
 		return error(HttpStatus.UNPROCESSABLE_CONTENT, exception.getMessage(), exception.code());
@@ -32,27 +36,32 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(DataAccessException.class)
-	public ResponseEntity<Map<String, Object>> databaseError() {
+	public ResponseEntity<Map<String, Object>> databaseError(DataAccessException exception) {
+		log.error("Database operation failed while handling an API request", exception);
 		return error(HttpStatus.INTERNAL_SERVER_ERROR, "Database operation failed", "database_error");
 	}
 
 	@ExceptionHandler(InvalidTriggerInputException.class)
 	public ResponseEntity<Map<String, Object>> invalidTriggerInput(InvalidTriggerInputException exception) {
+		log.error("Invalid trigger input", exception);
 		return error(HttpStatus.BAD_REQUEST, exception.getMessage(), "invalid_trigger_input");
 	}
 
 	@ExceptionHandler(InvalidTriggerTypeException.class)
 	public ResponseEntity<Map<String, Object>> invalidTriggerType(InvalidTriggerTypeException exception) {
+		log.error("Invalid trigger type", exception);
 		return error(HttpStatus.CONFLICT, exception.getMessage(), "invalid_trigger_type");
 	}
 
 	@ExceptionHandler(WorkflowNotPublishedException.class)
 	public ResponseEntity<Map<String, Object>> workflowNotPublished(WorkflowNotPublishedException exception) {
+		log.error("Workflow not published", exception);
 		return error(HttpStatus.CONFLICT, exception.getMessage(), "workflow_not_published");
 	}
 
 	@ExceptionHandler(WebhookUnauthorizedException.class)
 	public ResponseEntity<Map<String, Object>> unauthorizedWebhook(WebhookUnauthorizedException exception) {
+		log.error("Unauthorized webhook access", exception);
 		return error(HttpStatus.UNAUTHORIZED, exception.getMessage(), "invalid_webhook_secret");
 	}
 

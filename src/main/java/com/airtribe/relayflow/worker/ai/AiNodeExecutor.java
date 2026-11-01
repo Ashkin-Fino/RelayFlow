@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.airtribe.relayflow.common.exception.NodeExecutionException;
 import com.airtribe.relayflow.worker.dto.NodeExecutionResult;
-import com.airtribe.relayflow.worker.exception.NodeExecutionException;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;

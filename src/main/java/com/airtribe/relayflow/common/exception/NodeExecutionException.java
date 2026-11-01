@@ -1,4 +1,4 @@
-package com.airtribe.relayflow.worker.exception;
+package com.airtribe.relayflow.common.exception;
 
 /**
  * Describes a node execution failure and whether retrying the same logical

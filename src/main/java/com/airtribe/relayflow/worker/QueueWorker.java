@@ -24,7 +24,7 @@ public class QueueWorker {
 
 
     public QueueWorker(QueueJobRepository queue, WorkerExecutionService execution,
-            @Value("${relay.worker.id:relay-worker}") String workerId,
+            @Value("${relay.worker.id:worker-m1}") String workerId,
             @Value("${relay.worker.lease-seconds:60}") int leaseSeconds) {
         this.queue = queue; 
         this.execution = execution; 

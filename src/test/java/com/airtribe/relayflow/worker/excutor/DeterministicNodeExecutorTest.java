@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import com.airtribe.relayflow.worker.exception.NodeExecutionException;
+import com.airtribe.relayflow.common.exception.NodeExecutionException;
 import com.sun.net.httpserver.HttpServer;
 
 import org.junit.jupiter.api.Test;

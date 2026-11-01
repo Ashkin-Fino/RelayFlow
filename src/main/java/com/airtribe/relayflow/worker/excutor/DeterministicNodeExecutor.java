@@ -9,13 +9,13 @@ import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.airtribe.relayflow.common.exception.NodeExecutionException;
 import com.airtribe.relayflow.worker.ai.AiNodeExecutor;
 import com.airtribe.relayflow.worker.dto.NodeExecutionResult;
-import com.airtribe.relayflow.worker.exception.NodeExecutionException;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;

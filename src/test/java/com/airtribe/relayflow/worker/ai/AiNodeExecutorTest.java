@@ -10,7 +10,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.airtribe.relayflow.worker.exception.NodeExecutionException;
+import com.airtribe.relayflow.common.exception.NodeExecutionException;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -126,7 +126,7 @@ class AiNodeExecutorTest {
 			calls[0]++;
 			return calls[0] == 1
 					? new AiProviderClient.Completion("", 3, 0)
-					: new AiProviderClient.Completion("{\\"category\\":\\"question\\"}", 4, 2);
+					: new AiProviderClient.Completion("{\"category\":\"question\"}", 4, 2);
 		});
 
 		var result = executor.execute(node, params);
@@ -144,7 +144,7 @@ class AiNodeExecutorTest {
 			calls[0]++;
 			return calls[0] == 1
 					? new AiProviderClient.Completion("null", 2, 1)
-					: new AiProviderClient.Completion("{\\"category\\":\\"refund\\"}", 3, 2);
+					: new AiProviderClient.Completion("{\"category\":\"refund\"}", 3, 2);
 		});
 
 		var result = executor.execute(node, params);

@@ -9,8 +9,8 @@ import java.time.Duration;
 
 import org.springframework.stereotype.Component;
 
+import com.airtribe.relayflow.common.exception.NodeExecutionException;
 import com.airtribe.relayflow.config.AiProviderProperties;
-import com.airtribe.relayflow.worker.exception.NodeExecutionException;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;

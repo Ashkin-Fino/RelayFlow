@@ -5,21 +5,28 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import tools.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import tools.jackson.databind.JsonNode;
 
 @Component
 public class AiOutputSchemaValidator {
-	private final com.fasterxml.jackson.databind.ObjectMapper schemaMapper =
-			new com.fasterxml.jackson.databind.ObjectMapper();
+	private final ObjectMapper schemaMapper =
+			new ObjectMapper();
 	private final JsonSchemaFactory schemaFactory =
 			JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
 
 	public List<String> validate(JsonNode schemaDefinition, JsonNode output) {
+		/**
+		 * Validates the AI output against the provided schema.
+		 *
+		 * @param schemaDefinition The JSON schema definition.
+		 * @param output The AI output to validate.
+		 * @return A list of validation errors, if any.
+		 */
 		if (!schemaDefinition.isObject() || !schemaDefinition.path("type").asString().equals("object")) {
 			throw new IllegalArgumentException("AI output_schema must describe a JSON object");
 		}
