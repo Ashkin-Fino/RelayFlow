@@ -47,54 +47,84 @@ public class ApprovalService {
 
 	@Transactional(readOnly = true)
 	public List<ApprovalSummary> list(String status) {
+		/**
+		 * Lists all approvals with the specified status, ordered by creation time.
+		 * 
+		 * @param status The status of the approvals to list 
+		 *        (pending, approved, rejected, cancelled).
+		 * @return A list of ApprovalSummary objects representing the approvals 
+		 *         with the specified status.
+		 */
 		if (!List.of("pending", "approved", "rejected", "cancelled").contains(status)) {
 			throw new IllegalArgumentException("Unsupported approval status: " + status);
 		}
 		return approvals.findByStatusOrderByCreatedAtAsc(status).stream()
-				.map(approval -> new ApprovalSummary(approval.getId(), approval.getRunId(),
-						approval.getNodeId(), approval.getMessage(), approval.getStatus(),
-						approval.getCreatedAt()))
-				.toList();
+			.map(approval -> new ApprovalSummary(approval.getId(), approval.getRunId(),
+				approval.getNodeId(), approval.getMessage(), approval.getStatus(), 
+				approval.getCreatedAt()))
+			.toList();
 	}
 
 	@Transactional
 	public ApprovalDecisionResponse approve(String approvalId) {
+		// Approves the specified approval request and updates the associated 
+		// run and step entities accordingly.
 		return decide(approvalId, "approved", null);
 	}
 
 	@Transactional
 	public ApprovalDecisionResponse reject(String approvalId, String reason) {
+		// Rejects the specified approval request with an optional reason and
+		// updates the associated run and step entities accordingly.
 		return decide(approvalId, "rejected", reason);
 	}
 
 	private ApprovalDecisionResponse decide(String approvalId, String decision, String reason) {
+		/**
+		 * Decides on an approval request by either approving or rejecting it,
+		 * and updates the associated run and step entities accordingly.
+		 * 
+		 * @param approvalId The ID of the approval request to decide on.
+		 * @param decision The decision to make ("approved" or "rejected").
+		 * @param reason An optional reason for the decision (only applicable for rejection).
+		 * @return An ApprovalDecisionResponse containing the updated approval 
+		 *         and run information.
+		 * @throws ApprovalNotFoundException if the approval request does not exist.
+		 * @throws RunNotFoundException if the associated run does not exist.
+		 */
 		ApprovalEntity initial = approvals.findById(approvalId)
-				.orElseThrow(() -> new ApprovalNotFoundException(approvalId));
+			.orElseThrow(() -> new ApprovalNotFoundException(approvalId));
 		RunEntity run = runs.findByIdForUpdate(initial.getRunId())
-				.orElseThrow(() -> new RunNotFoundException(initial.getRunId()));
+			.orElseThrow(() -> new RunNotFoundException(initial.getRunId()));
 		ApprovalEntity approval = approvals.findByIdForUpdate(approvalId)
-				.orElseThrow(() -> new ApprovalNotFoundException(approvalId));
+			.orElseThrow(() -> new ApprovalNotFoundException(approvalId));
+
 		if (!"pending".equals(approval.getStatus())) {
 			throw new ApprovalConflictException("Approval has already been decided");
 		}
+
 		if (!"waiting_approval".equals(run.getStatus())) {
 			throw new ApprovalConflictException("Run is not waiting for approval");
 		}
 
 		StepEntity step = steps.findById(approval.getStepId())
 				.orElseThrow(() -> new ApprovalConflictException("Approval step no longer exists"));
+
 		if (!"approval".equals(step.getNodeType()) || !"waiting".equals(step.getStatus())) {
 			throw new ApprovalConflictException("Approval step is not waiting for a decision");
 		}
+
 		String nextNodeId = nextNodeId(run, approval.getNodeId());
 
 		approval.decide(decision, decider, reason);
 		ObjectNode output = objectMapper.createObjectNode()
-				.put("decision", decision)
-				.put("decided_by", decider);
+			.put("decision", decision)
+			.put("decided_by", decider);
+
 		if (reason != null && !reason.isBlank()) {
 			output.put("reason", reason);
 		}
+
 		step.completeApproval(output);
 		steps.save(step);
 		approvals.save(approval);
@@ -109,13 +139,16 @@ public class ApprovalService {
 			run.cancel();
 			runs.save(run);
 		}
+
 		return new ApprovalDecisionResponse(approval.getId(), run.getId(), approval.getStatus());
 	}
 
 	private String nextNodeId(RunEntity run, String nodeId) {
+		// Finds the next node ID in the run's definition snapshot after the specified node ID.
 		for (var node : run.getDefinitionSnapshot().path("nodes")) {
 			if (nodeId.equals(node.path("id").asString())) {
-				return node.path("next").isNull() || node.path("next").isMissingNode()
+				return node.path("next").isNull() || 
+					node.path("next").isMissingNode() 
 						? null : node.path("next").asString();
 			}
 		}
