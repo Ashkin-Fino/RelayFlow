@@ -119,6 +119,60 @@ class AiNodeExecutorTest {
 		assertEquals(0, calls[0]);
 	}
 
+	@Test
+	void repairsEmptyProviderResponseExactlyOnce() {
+		int[] calls = { 0 };
+		AiNodeExecutor executor = executor(prompt -> {
+			calls[0]++;
+			return calls[0] == 1
+					? new AiProviderClient.Completion("", 3, 0)
+					: new AiProviderClient.Completion("{\\"category\\":\\"question\\"}", 4, 2);
+		});
+
+		var result = executor.execute(node, params);
+
+		assertEquals(2, calls[0]);
+		assertEquals("question", result.output().path("category").asString());
+		assertEquals(7, result.tokensPrompt());
+		assertEquals(2, result.tokensCompletion());
+	}
+
+	@Test
+	void repairsJsonNullProviderResponseExactlyOnce() {
+		int[] calls = { 0 };
+		AiNodeExecutor executor = executor(prompt -> {
+			calls[0]++;
+			return calls[0] == 1
+					? new AiProviderClient.Completion("null", 2, 1)
+					: new AiProviderClient.Completion("{\\"category\\":\\"refund\\"}", 3, 2);
+		});
+
+		var result = executor.execute(node, params);
+
+		assertEquals(2, calls[0]);
+		assertEquals("refund", result.output().path("category").asString());
+		assertEquals(5, result.tokensPrompt());
+		assertEquals(3, result.tokensCompletion());
+	}
+
+	@Test
+	void failsAfterEmptyRepairResponseAndRetainsBothTokenCounts() {
+		int[] calls = { 0 };
+		AiNodeExecutor executor = executor(prompt -> {
+			calls[0]++;
+			return new AiProviderClient.Completion("", 2, 1);
+		});
+
+		NodeExecutionException failure = assertThrows(NodeExecutionException.class,
+				() -> executor.execute(node, params));
+
+		assertEquals(2, calls[0]);
+		assertFalse(failure.isRetryable());
+		assertEquals(4, failure.getTokensPrompt());
+		assertEquals(2, failure.getTokensCompletion());
+		assertTrue(failure.getMessage().contains("one repair attempt"));
+	}
+
 	private AiNodeExecutor executor(java.util.function.Function<String, AiProviderClient.Completion> complete) {
 		AiProviderClient provider = (prompt, outputSchema) -> complete.apply(prompt);
 		return new AiNodeExecutor(provider, new AiOutputSchemaValidator(), mapper);
