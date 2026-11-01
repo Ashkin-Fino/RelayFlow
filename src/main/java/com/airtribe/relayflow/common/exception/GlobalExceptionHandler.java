@@ -25,6 +25,26 @@ public class GlobalExceptionHandler {
 		return error(HttpStatus.NOT_FOUND, exception.getMessage(), "workflow_not_found");
 	}
 
+	@ExceptionHandler(ApprovalNotFoundException.class)
+	public ResponseEntity<Map<String, Object>> approvalNotFound(ApprovalNotFoundException exception) {
+		return error(HttpStatus.NOT_FOUND, exception.getMessage(), "approval_not_found");
+	}
+
+	@ExceptionHandler(RunNotFoundException.class)
+	public ResponseEntity<Map<String, Object>> runNotFound(RunNotFoundException exception) {
+		return error(HttpStatus.NOT_FOUND, exception.getMessage(), "run_not_found");
+	}
+
+	@ExceptionHandler({ApprovalConflictException.class, RunConflictException.class})
+	public ResponseEntity<Map<String, Object>> approvalOrRunConflict(RuntimeException exception) {
+		return error(HttpStatus.CONFLICT, exception.getMessage(), "state_conflict");
+	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<Map<String, Object>> invalidArgument(IllegalArgumentException exception) {
+		return error(HttpStatus.BAD_REQUEST, exception.getMessage(), "invalid_request");
+	}
+
 	@ExceptionHandler(WorkflowConflictException.class)
 	public ResponseEntity<Map<String, Object>> conflict(WorkflowConflictException exception) {
 		return error(HttpStatus.CONFLICT, exception.getMessage(), "workflow_already_exists");

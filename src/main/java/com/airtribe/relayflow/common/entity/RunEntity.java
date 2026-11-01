@@ -137,6 +137,9 @@ public class RunEntity {
     }
 
 	public void start() {
+		if (!"queued".equals(this.status)) {
+			return;
+		}
 		this.status = "running";
 		if (this.startedAt == null) {
 			this.startedAt = Instant.now();
@@ -146,6 +149,40 @@ public class RunEntity {
 	public void advance(String nextNodeId) {
 		this.currentNodeId = nextNodeId;
 		this.stepsExecuted++;
+	}
+
+	public void waitForApproval() {
+		if (!"running".equals(status)) {
+			throw new IllegalStateException("Only a running run can wait for approval");
+		}
+		this.status = "waiting_approval";
+	}
+
+	public void completeApproval(String nextNodeId) {
+		if (!"waiting_approval".equals(status)) {
+			throw new IllegalStateException("Run is not waiting for approval");
+		}
+		this.status = "running";
+		advance(nextNodeId);
+		if (nextNodeId == null) {
+			succeed();
+		}
+	}
+
+	public void requestCancellation() {
+		if ("running".equals(status)) {
+			this.cancelRequested = true;
+		}
+	}
+
+	public void cancel() {
+		if (!"queued".equals(status) && !"running".equals(status) && !"waiting_approval".equals(status)) {
+			throw new IllegalStateException("Only a non-terminal run can be cancelled");
+		}
+		this.cancelRequested = true;
+		this.status = "cancelled";
+		this.currentNodeId = null;
+		this.finishedAt = Instant.now();
 	}
 
 	public void addAiTokensUsed(long tokens) {

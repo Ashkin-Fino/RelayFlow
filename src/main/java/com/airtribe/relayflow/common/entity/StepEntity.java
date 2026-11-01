@@ -89,6 +89,10 @@ public class StepEntity {
         return nodeId;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public String getNodeType() {
         return nodeType;
     }
@@ -150,6 +154,31 @@ public class StepEntity {
         this.status = "waiting";
         this.durationMs = durationMs;
         this.finishedAt = Instant.now();
+    }
+
+    public void waitForApproval() {
+        this.error = null;
+        this.output = null;
+        this.status = "waiting";
+        this.finishedAt = Instant.now();
+        this.durationMs = startedAt == null
+                ? 0L : Math.max(0L, java.time.Duration.between(startedAt, finishedAt).toMillis());
+    }
+
+    public void cancel() {
+        this.error = null;
+        this.status = "cancelled";
+        this.finishedAt = Instant.now();
+        this.durationMs = startedAt == null
+                ? 0L : Math.max(0L, java.time.Duration.between(startedAt, finishedAt).toMillis());
+    }
+
+    public void completeApproval(JsonNode output) {
+        if (!"waiting".equals(status)) {
+            throw new IllegalStateException("Only a waiting step can complete an approval");
+        }
+        succeed(output, startedAt == null
+                ? 0L : Math.max(0L, java.time.Duration.between(startedAt, Instant.now()).toMillis()));
     }
 
     public void succeed(JsonNode output, long durationMs) {
