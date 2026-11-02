@@ -16,13 +16,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowDetailResponse;
 import com.airtribe.relayflow.api.workflow.dto.WorkflowSummary;
 import com.airtribe.relayflow.api.workflow.service.WorkflowService;
 import com.airtribe.relayflow.auth.DemoTokenFilter;
 import com.airtribe.relayflow.common.exception.GlobalExceptionHandler;
 import com.airtribe.relayflow.common.exception.WorkflowDefinitionException;
+import com.airtribe.relayflow.common.exception.WorkflowNotFoundException;
 
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 class WorkflowControllerTest {
 	private static final String DEMO_TOKEN = "phase-two-test-token";
@@ -46,6 +49,31 @@ class WorkflowControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value("wf_demo"))
 				.andExpect(jsonPath("$[0].status").value("published"));
+	}
+
+	@Test
+	void getsWorkflowDetailById() throws Exception {
+		when(workflowService.get("wf_demo")).thenReturn(new WorkflowDetailResponse(
+				"wf_demo", "Demo", "Description", "published",
+				new ObjectMapper().readTree(
+						"{\"entry\":\"hello\",\"nodes\":[{\"id\":\"hello\"}]}"),
+				null, null));
+
+		mockMvc.perform(get("/workflows/wf_demo").header("Authorization", "Bearer " + DEMO_TOKEN))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value("wf_demo"))
+				.andExpect(jsonPath("$.status").value("published"))
+				.andExpect(jsonPath("$.definition.entry").value("hello"))
+				.andExpect(jsonPath("$.definition.nodes[0].id").value("hello"));
+	}
+
+	@Test
+	void missingWorkflowDetailReturnsStructured404() throws Exception {
+		when(workflowService.get("missing")).thenThrow(new WorkflowNotFoundException("missing"));
+
+		mockMvc.perform(get("/workflows/missing").header("Authorization", "Bearer " + DEMO_TOKEN))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.error.code").value("workflow_not_found"));
 	}
 
 	@Test

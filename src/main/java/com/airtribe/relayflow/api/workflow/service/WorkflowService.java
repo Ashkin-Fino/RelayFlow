@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowDetailResponse;
 import com.airtribe.relayflow.api.workflow.dto.WorkflowSummary;
 import com.airtribe.relayflow.common.entity.WorkflowEntity;
 import com.airtribe.relayflow.common.exception.WorkflowConflictException;
@@ -31,6 +32,15 @@ public class WorkflowService {
 		return workflowRepository.findAll(Sort.by(Sort.Direction.ASC, "id")).stream()
 				.map(workflow -> new WorkflowSummary(workflow.getId(), workflow.getName(), workflow.getStatus()))
 				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public WorkflowDetailResponse get(String workflowId) {
+		WorkflowEntity workflow = workflowRepository.findById(workflowId)
+				.orElseThrow(() -> new WorkflowNotFoundException(workflowId));
+		return new WorkflowDetailResponse(workflow.getId(), workflow.getName(),
+				workflow.getDescription(), workflow.getStatus(), workflow.getDefinition(),
+				workflow.getCreatedAt(), workflow.getUpdatedAt());
 	}
 
 	@Transactional

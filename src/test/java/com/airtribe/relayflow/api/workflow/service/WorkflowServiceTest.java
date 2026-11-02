@@ -16,6 +16,7 @@ import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
 import com.airtribe.relayflow.catalog.NodeCatalog;
 import com.airtribe.relayflow.common.entity.WorkflowEntity;
 import com.airtribe.relayflow.common.exception.WorkflowConflictException;
+import com.airtribe.relayflow.common.exception.WorkflowNotFoundException;
 import com.airtribe.relayflow.common.repository.WorkflowRepository;
 
 import tools.jackson.databind.JsonNode;
@@ -69,6 +70,30 @@ class WorkflowServiceTest {
 		assertEquals(new WorkflowStatusResponse("wf_service_test", "published"), response);
 		assertEquals("published", entity.getStatus());
 		verify(workflowRepository).save(entity);
+	}
+
+	@Test
+	void getsWorkflowDetailIncludingDefinition() {
+		JsonNode definition = validDefinition();
+		WorkflowEntity entity = new WorkflowEntity(
+				"wf_service_test", "Service test", "Description", "published", definition);
+		when(workflowRepository.findById("wf_service_test")).thenReturn(Optional.of(entity));
+
+		var response = workflowService.get("wf_service_test");
+
+		assertEquals("wf_service_test", response.id());
+		assertEquals("Service test", response.name());
+		assertEquals("Description", response.description());
+		assertEquals("published", response.status());
+		assertEquals(definition, response.definition());
+	}
+
+	@Test
+	void missingWorkflowDetailReturnsNotFound() {
+		when(workflowRepository.findById("missing")).thenReturn(Optional.empty());
+
+		org.junit.jupiter.api.Assertions.assertThrows(
+				WorkflowNotFoundException.class, () -> workflowService.get("missing"));
 	}
 
 	private JsonNode validDefinition() {

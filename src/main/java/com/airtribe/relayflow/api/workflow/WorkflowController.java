@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowDetailResponse;
 import com.airtribe.relayflow.api.workflow.dto.WorkflowSummary;
 import com.airtribe.relayflow.api.workflow.service.WorkflowService;
 
@@ -29,6 +30,11 @@ public class WorkflowController {
 	@GetMapping
 	public List<WorkflowSummary> list() {
 		return workflowService.list();
+	}
+
+	@GetMapping("/{workflowId}")
+	public WorkflowDetailResponse get(@PathVariable String workflowId) {
+		return workflowService.get(workflowId);
 	}
 
 	@PostMapping

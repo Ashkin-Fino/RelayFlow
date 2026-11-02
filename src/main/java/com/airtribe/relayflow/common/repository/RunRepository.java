@@ -10,6 +10,8 @@ import com.airtribe.relayflow.common.entity.RunEntity;
 import jakarta.persistence.LockModeType;
 
 public interface RunRepository extends JpaRepository<RunEntity, String> {
+	java.util.List<RunEntity> findByWorkflowIdOrderByCreatedAtDesc(String workflowId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select r from RunEntity r where r.id = :id")
 	java.util.Optional<RunEntity> findByIdForUpdate(@Param("id") String id);

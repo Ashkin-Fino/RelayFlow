@@ -57,10 +57,11 @@ Spring Boot health is available at `http://localhost:8080/actuator/health`.
 These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 - `GET /workflows` lists workflow `id`, `name`, and `status`.
+- `GET /workflows/{workflowId}` returns workflow metadata, timestamps, and the full definition.
 - `POST /workflows` accepts the canonical workflow JSON definition, validates it against the node catalog, and creates a Draft.
 - `POST /workflows/{workflowId}/publish` validates the stored definition and publishes it.
 
-Definitions are validated for catalog node types, required parameters, parameter types/enums, trigger configuration, `limits.max_steps`, entry-node existence, and outgoing node pointers. Backward pointers are allowed. Invalid definitions return a structured 4xx error; missing/invalid bearer tokens return 401. The workflow-detail route is not part of this implemented API surface.
+Definitions are validated for catalog node types, required parameters, parameter types/enums, trigger configuration, `limits.max_steps`, entry-node existence, and outgoing node pointers. Backward pointers are allowed. Invalid definitions return a structured 4xx error; missing/invalid bearer tokens return 401.
 
 ### Worklfow Triggering API
 
@@ -68,6 +69,8 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 - `POST /workflows/{workflowId}/trigger` triggers a published workflow which support manual trigger
 - `POST /hooks/{workflowId}` triggers a published which supports webhook trigger. Also requires a `X-Relay-Secret` header.
+- `GET /runs?workflowId={workflowId}` lists the workflow's runs, newest first.
+- `GET /runs/{runId}` returns run state and ordered step trace details.
 
 ### Approval and cancellation API
 
@@ -78,7 +81,7 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 ### Current implementation status
 
-Phases 1–6 are implemented. The Phase 7 backend run-trace endpoint, `GET /runs/{runId}`, is implemented and returns run state plus ordered step details, including resolved inputs, outputs, errors, attempts, timing, AI token usage, and approval decisions. See [dev_report/phase_7.md](dev_report/phase_7.md). The Phase 7 console remains outstanding. Other backend work still outstanding includes workflow detail and run-listing endpoints, plus final smoke-test and kill/resume duplication-check acceptance. Live testing with a real AI provider and prompt-injection payloads also remains pending.
+Phases 1–6 are implemented. The Phase 7 backend read APIs are implemented: `GET /runs/{runId}` returns run state and ordered step trace details, `GET /runs?workflowId={workflowId}` lists a workflow's runs, and `GET /workflows/{workflowId}` returns workflow metadata and its full definition. See [dev_report/phase_7.md](dev_report/phase_7.md). The Phase 7 console remains outstanding. Final smoke-test and kill/resume duplication-check acceptance, plus live testing with a real AI provider and prompt-injection payloads, remain pending.
 
 Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`. Approval, rejection, and cancellation transitions are persisted in PostgreSQL and serialized against conflicting decisions.
 
