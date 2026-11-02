@@ -120,6 +120,10 @@ public class RunEntity {
 		return aiTokensUsed;
 	}
 
+	public JsonNode getError() {
+		return error;
+	}
+
 	public boolean isCancelRequested() { 
         return cancelRequested; 
     }

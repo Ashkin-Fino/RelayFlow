@@ -17,6 +17,8 @@ public interface ApprovalRepository extends JpaRepository<ApprovalEntity, String
 
 	List<ApprovalEntity> findByRunIdAndStatus(String runId, String status);
 
+	List<ApprovalEntity> findByRunIdOrderByCreatedAtAsc(String runId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select a from ApprovalEntity a where a.id = :id")
 	Optional<ApprovalEntity> findByIdForUpdate(@Param("id") String id);

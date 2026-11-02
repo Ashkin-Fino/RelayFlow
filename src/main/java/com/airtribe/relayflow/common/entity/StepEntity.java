@@ -133,6 +133,22 @@ public class StepEntity {
         return tokensCompletion;
     }
 
+    public JsonNode getError() {
+        return error;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public Instant getFinishedAt() {
+        return finishedAt;
+    }
+
+    public Long getDurationMs() {
+        return durationMs;
+    }
+
     /**
      * Called only when a previous attempt was durably marked waiting.
      * A row left running by a worker crash keeps its current attempt number.

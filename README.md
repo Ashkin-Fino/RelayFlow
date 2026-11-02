@@ -78,7 +78,7 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 ### Current implementation status
 
-Phases 1–6 are implemented, with all 55 automated tests passing. Live testing with a real AI provider and prompt-injection payloads remains pending. The run-trace API and console, smoke-test acceptance, and duplication-check acceptance are not yet complete.
+Phases 1–6 are implemented. The Phase 7 backend run-trace endpoint, `GET /runs/{runId}`, is implemented and returns run state plus ordered step details, including resolved inputs, outputs, errors, attempts, timing, AI token usage, and approval decisions. See [dev_report/phase_7.md](dev_report/phase_7.md). The Phase 7 console remains outstanding. Other backend work still outstanding includes workflow detail and run-listing endpoints, plus final smoke-test and kill/resume duplication-check acceptance. Live testing with a real AI provider and prompt-injection payloads also remains pending.
 
 Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`. Approval, rejection, and cancellation transitions are persisted in PostgreSQL and serialized against conflicting decisions.
 
