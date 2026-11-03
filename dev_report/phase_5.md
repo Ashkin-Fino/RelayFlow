@@ -1,7 +1,7 @@
 # Phase 5 Development Report — AI, Templates, and Guardrails
 
 **Milestone:** M5 — AI and template resolution  
-**Status: PHASE 5 IMPLEMENTATION COMPLETE.** AI execution, schema enforcement, token accounting, nested templates, and the sensitive-node guard are implemented and covered by automated tests. Live testing with a real AI provider remains pending.
+**Status: PHASE 5 COMPLETE.** AI execution, schema enforcement, token accounting, nested templates, and the sensitive-node guard are implemented and covered by automated tests. The user has confirmed successful live testing with a real OpenRouter AI model and completion of prompt-injection testing.
 
 ## Context review
 
@@ -39,7 +39,8 @@ Full verification: `.\mvnw.cmd package` **PASS**, 46 tests passed, zero failures
 
 ## Remaining verification and limitations
 
-- **Pending:** live integration against a real OpenAI-compatible AI provider, including the sample prompt-injection payloads.
+- **Completed:** user-confirmed live integration test using a real OpenRouter model.
+- **Completed:** user-confirmed prompt-injection testing, including verification that AI output cannot bypass the persisted approval gate.
 - The bundled `mock_provider.py` emits generic prose rather than schema-shaped classifications, so it is not sufficient for the seeded triage workflow's structured output without a provider/test double that returns the requested JSON.
-- The approval lifecycle/API and run trace API are not implemented yet; token persistence is in place but there is not yet a user-facing trace endpoint.
-- Supplied smoke and duplication acceptance scripts have not been recorded as passing; those remain end-to-end acceptance work beyond Phase 5.
+- Approval lifecycle/API and run trace APIs were implemented in later phases; token usage is now visible in the run trace.
+- The full end-to-end acceptance run, including the supplied smoke and duplication checks, is deferred until the frontend console is implemented.

@@ -81,7 +81,7 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 ### Current implementation status
 
-Phases 1–6 are implemented. The Phase 7 backend read APIs are implemented: `GET /runs/{runId}` returns run state and ordered step trace details, `GET /runs?workflowId={workflowId}` lists a workflow's runs, and `GET /workflows/{workflowId}` returns workflow metadata and its full definition. See [dev_report/phase_7.md](dev_report/phase_7.md). The Phase 7 console remains outstanding. Final smoke-test and kill/resume duplication-check acceptance, plus live testing with a real AI provider and prompt-injection payloads, remain pending.
+The planned backend API and execution features are implemented, including the Phase 7 read APIs: `GET /runs/{runId}` returns run state and ordered step trace details, `GET /runs?workflowId={workflowId}` lists a workflow's runs, and `GET /workflows/{workflowId}` returns workflow metadata and its full definition. Live testing with a real OpenRouter model and prompt-injection testing are confirmed complete; see [dev_report/phase_5.md](dev_report/phase_5.md). The Phase 7 console remains outstanding. The full end-to-end acceptance run, including the unchanged smoke test and kill/resume duplication check, will be completed after the frontend is implemented. See [dev_report/phase_7.md](dev_report/phase_7.md).
 
 Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`. Approval, rejection, and cancellation transitions are persisted in PostgreSQL and serialized against conflicting decisions.
 

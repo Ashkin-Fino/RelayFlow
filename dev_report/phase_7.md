@@ -2,7 +2,7 @@
 
 ## Status
 
-The Phase 7 backend read APIs are implemented. Phase 7 is not complete: the operator console remains outstanding.
+The Phase 7 backend read APIs are implemented. Phase 7 is not complete: the operator console remains outstanding. The planned backend API and execution features are implemented. The full end-to-end acceptance run is deferred until the frontend console is implemented.
 
 ## Implemented
 
@@ -24,5 +24,5 @@ The Phase 7 backend read APIs are implemented. Phase 7 is not complete: the oper
 ## Remaining work
 
 - Phase 7 frontend console: workflow/run views, trace display, approval actions, and cancellation controls.
-- End-to-end acceptance remains: run `scripts/smoke_test.py` unchanged and run `scripts/duplication_check.py` after a worker kill/resume drill.
-- Live real-provider and prompt-injection verification remains pending from Phase 5.
+- The full end-to-end acceptance run remains: run `scripts/smoke_test.py` unchanged and run `scripts/duplication_check.py` after a worker kill/resume drill, after the frontend is implemented.
+- Real-provider and prompt-injection testing were confirmed complete by the user and recorded in the Phase 5 report.
