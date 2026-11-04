@@ -59,6 +59,7 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 - `GET /workflows` lists workflow `id`, `name`, and `status`.
 - `GET /workflows/{workflowId}` returns workflow metadata, timestamps, and the full definition.
 - `POST /workflows` accepts the canonical workflow JSON definition, validates it against the node catalog, and creates a Draft.
+- `PUT /workflows/{workflowId}` replaces an existing Draft definition. The path ID and definition ID must match; published workflows cannot be edited.
 - `POST /workflows/{workflowId}/publish` validates the stored definition and publishes it.
 
 Definitions are validated for catalog node types, required parameters, parameter types/enums, trigger configuration, `limits.max_steps`, entry-node existence, and outgoing node pointers. Backward pointers are allowed. Invalid definitions return a structured 4xx error; missing/invalid bearer tokens return 401.
@@ -79,9 +80,23 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 - `POST /approvals/{approvalId}/reject` records the rejection and cancels the run. An optional JSON body may include a `reason`.
 - `POST /runs/{runId}/cancel` cancels a queued or approval-waiting run immediately, or requests cooperative cancellation of a running run. A running node is allowed to finish before the worker stops the run. Cancelling a terminal run returns `409`.
 
+### Console
+
+The React/Vite console is in `frontend/`. Start it separately from the backend:
+
+```powershell
+Set-Location frontend
+npm install
+npm run dev
+```
+
+The console uses `http://localhost:8080` by default; set `VITE_API_BASE_URL` before starting Vite to use a different API URL. Enter the configured demo bearer token in the console. The backend's `RELAY_FRONTEND_ORIGIN` setting controls allowed browser origins.
+
+The console includes Overview, Workflows, and Runs pages; workflow JSON and flowchart details; run traces with guarded approval and cancellation actions; and a catalog-driven workflow builder. New workflows are saved as Drafts. Drafts can be edited and published from the console; published definitions remain read-only. Schedule triggers can be authored with a cron expression, but the backend does not yet execute cron schedules.
+
 ### Current implementation status
 
-The planned backend API and execution features are implemented, including the Phase 7 read APIs: `GET /runs` lists all runs newest first, optionally filtered by `workflowId` and/or `status`; `GET /runs/{runId}` returns run state and ordered step trace details; and `GET /workflows/{workflowId}` returns workflow metadata and its full definition. Live testing with a real OpenRouter model and prompt-injection testing are confirmed complete; see [dev_report/phase_5.md](dev_report/phase_5.md). The Phase 7 console remains outstanding. The full end-to-end acceptance run, including the unchanged smoke test and kill/resume duplication check, will be completed after the frontend is implemented. See [dev_report/phase_7.md](dev_report/phase_7.md).
+Phases 0–7 are implemented. Phase 7 includes the run trace and listing APIs, workflow details, and the console described above. The full end-to-end acceptance run remains outstanding: run `scripts/smoke_test.py` unchanged and run `scripts/duplication_check.py` after a worker kill/resume drill. Real-provider testing with OpenRouter and prompt-injection testing were confirmed complete; see [dev_report/phase_5.md](dev_report/phase_5.md) and [dev_report/phase_7.md](dev_report/phase_7.md).
 
 Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`. Approval, rejection, and cancellation transitions are persisted in PostgreSQL and serialized against conflicting decisions.
 

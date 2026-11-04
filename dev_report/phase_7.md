@@ -2,27 +2,34 @@
 
 ## Status
 
-The Phase 7 backend read APIs are implemented. Phase 7 is not complete: the operator console remains outstanding. The planned backend API and execution features are implemented. The full end-to-end acceptance run is deferred until the frontend console is implemented.
+**Completed.** Phase 7's backend read APIs and operational console are implemented. The separate project-level end-to-end acceptance checks remain outstanding and are tracked under Phase 8.
 
 ## Implemented
 
-- `GET /runs/{runId}` returns the run ID, workflow ID, lifecycle status, trigger type, current node, step count, AI token total, cancellation state, run error, and start/finish timestamps.
-- The trace includes steps ordered by execution sequence, with node ID/type, status, sequence, attempt, resolved input, output, error, timing, token counts, and idempotency key.
-- Approval-node traces include the associated approval ID, decision status, actor, timestamp, and optional reason.
-- Unknown run IDs return the established structured 404 response.
-- `GET /runs` returns all run summaries newest first. Optional `workflowId` and `status` filters can be combined; supported statuses are `queued`, `running`, `waiting_approval`, `succeeded`, `failed`, and `cancelled`. Blank or unsupported filters return 400, and an unknown workflow returns 404.
-- `GET /workflows/{workflowId}` returns workflow metadata, timestamps, and the full stored definition. Unknown workflow IDs return 404.
+### Backend
+
+- `GET /runs/{runId}` returns run state and an execution-ordered trace, including available step inputs/outputs, errors, timing, AI token usage, idempotency keys, and approval metadata.
+- `GET /runs` lists runs newest first and supports combined `workflowId` and `status` filters. Invalid filters return 400, and an unknown workflow returns 404.
+- `GET /workflows/{workflowId}` returns workflow metadata, timestamps, and its stored definition.
+- `PUT /workflows/{workflowId}` updates an existing Draft, validates the replacement definition, and requires the path ID and definition ID to match. Published workflows cannot be edited.
+- CORS allows the console's `PUT` Draft-update requests.
+
+### Console
+
+- Overview, Workflows, and Runs operational pages use the backend APIs. Workflow and status filters are reflected in the Runs URL.
+- Workflow details provide JSON and flowchart views, manual triggering where supported, and publishing for Draft workflows.
+- Run details display the trace and provide guarded approval/rejection and cancellation actions with state refresh after successful responses.
+- The catalog-driven workflow builder maps the graph to canonical workflow JSON, performs helpful client-side validation, and creates Drafts. Existing Drafts can be loaded, edited, and saved back to the same workflow.
 
 ## Verification
 
-- Run trace service tests cover ordered steps, approval metadata, AI token details, JSON response field names, and unknown-run behavior.
-- Application context test confirms the controller and service are registered.
-- `.\mvnw.cmd "-Drelay.ai.base-url=http://localhost:9001/v1" package` — passed with all 71 tests. The override was needed because the local environment sets a different AI base URL than the existing application-context test expects; no environment configuration was changed.
-- Focused workflow-detail and run-list service/controller tests — passed (18 selected tests including the application-context test).
+- Frontend `npm run lint` — passed.
+- Frontend `npm run build` — passed. Vite reports that the main minified bundle is slightly above its 500 kB advisory threshold.
+- `.\mvnw.cmd package` — passed; all 87 automated tests passed with no failures or errors.
+- Focused workflow API/service tests — passed.
 - `git diff --check` — passed.
 
-## Remaining work
+## Limitations and remaining project verification
 
-- Phase 7 frontend console: workflow/run views, trace display, approval actions, and cancellation controls.
-- The full end-to-end acceptance run remains: run `scripts/smoke_test.py` unchanged and run `scripts/duplication_check.py` after a worker kill/resume drill, after the frontend is implemented.
-- Real-provider and prompt-injection testing were confirmed complete by the user and recorded in the Phase 5 report.
+- Cron schedule triggers can be authored and validated, but the backend does not yet execute workflows on a schedule. Cron scheduling remains a Good To Have item.
+- The unchanged `scripts/smoke_test.py` and the `scripts/duplication_check.py` worker kill/resume drill have not been completed as final end-to-end acceptance. Their results are not represented as passing by this phase report.
