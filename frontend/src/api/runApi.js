@@ -7,3 +7,11 @@ export function getRuns({ workflowId, status } = {}) {
   const search = query.toString()
   return apiRequest(`/runs${search ? `?${search}` : ''}`)
 }
+
+export function getRunTrace(runId) {
+  return apiRequest(`/runs/${encodeURIComponent(runId)}`)
+}
+
+export function cancelRun(runId) {
+  return apiRequest(`/runs/${encodeURIComponent(runId)}/cancel`, { method: 'POST' })
+}

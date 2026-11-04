@@ -5,6 +5,9 @@ const statusLabels = {
   succeeded: 'Succeeded',
   failed: 'Failed',
   cancelled: 'Cancelled',
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
   draft: 'Draft',
   published: 'Published',
 }

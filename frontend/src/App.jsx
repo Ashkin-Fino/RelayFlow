@@ -5,6 +5,8 @@ import AppShell from './components/layout/AppShell.jsx'
 import PagePlaceholder from './components/common/PagePlaceholder.jsx'
 import OverviewPage from './pages/OverviewPage.jsx'
 import RunsPage from './pages/RunsPage.jsx'
+import RunTracePage from './pages/RunTracePage.jsx'
+import WorkflowDetailPage from './pages/WorkflowDetailPage.jsx'
 import WorkflowsPage from './pages/WorkflowsPage.jsx'
 import './App.css'
 
@@ -80,15 +82,7 @@ function App() {
         <Route element={<AppShell onSignOut={signOut} />}>
           <Route element={<OverviewPage />} path="/" />
           <Route element={<WorkflowsPage />} path="/workflows" />
-          <Route
-            element={
-              <PlaceholderRoute
-                title="Workflow details"
-                description="Inspect the canonical definition as JSON or a flowchart."
-              />
-            }
-            path="/workflows/:workflowId"
-          />
+          <Route element={<WorkflowDetailPage />} path="/workflows/:workflowId" />
           <Route
             element={
               <PlaceholderRoute
@@ -99,15 +93,7 @@ function App() {
             path="/workflows/new"
           />
           <Route element={<RunsPage />} path="/runs" />
-          <Route
-            element={
-              <PlaceholderRoute
-                title="Run trace"
-                description="Inspect execution steps and available run actions."
-              />
-            }
-            path="/runs/:runId"
-          />
+          <Route element={<RunTracePage />} path="/runs/:runId" />
           <Route element={<Navigate replace to="/" />} path="*" />
         </Route>
       </Routes>
