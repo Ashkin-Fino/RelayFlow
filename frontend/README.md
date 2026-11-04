@@ -1,16 +1,23 @@
-# React + Vite
+# RelayFlow Console
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The console is a React + Vite client for the RelayFlow Spring Boot API. The
+browser communicates only with the API; it does not connect to PostgreSQL, the
+worker, the mock world, or the AI provider.
 
-Currently, two official plugins are available:
+## Local setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copy `.env.example` to `.env.local` and set `VITE_API_BASE_URL` to the API
+   origin (default: `http://localhost:8080`).
+2. Install dependencies with `npm install`.
+3. Start the development server with `npm run dev`.
+4. Enter the demo bearer token configured through `RELAY_DEMO_TOKEN` when the
+   console prompts for it.
 
-## React Compiler
+The token is held in browser session storage for the current tab session and is
+not committed or logged. Use **Change API token** in the navigation rail to
+remove it from the session.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Checks
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `npm run lint`
+- `npm run build`

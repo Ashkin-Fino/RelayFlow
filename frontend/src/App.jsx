@@ -1,121 +1,138 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { setApiToken } from './api/client.js'
+import AppShell from './components/layout/AppShell.jsx'
+import PagePlaceholder from './components/common/PagePlaceholder.jsx'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+const initialToken = window.sessionStorage.getItem('relay.demoToken') ?? ''
+setApiToken(initialToken)
+
+function TokenSetup({ onSave }) {
+  const [token, setToken] = useState('')
+
+  function handleSubmit(event) {
+    event.preventDefault()
+    const trimmedToken = token.trim()
+    if (trimmedToken) {
+      onSave(trimmedToken)
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <main className="setup-page">
+      <form className="setup-card" onSubmit={handleSubmit}>
+        <div className="brand-mark" aria-hidden="true">R</div>
+        <p className="eyebrow">RelayFlow Console</p>
+        <h1>Connect to your workspace</h1>
+        <p className="muted">
+          Enter the demo bearer token configured for your RelayFlow API. It is
+          kept in this browser session and is never written to application logs.
+        </p>
+        <label className="field-label" htmlFor="demo-token">Demo bearer token</label>
+        <input
+          autoComplete="current-password"
+          id="demo-token"
+          onChange={(event) => setToken(event.target.value)}
+          placeholder="Enter token"
+          required
+          type="password"
+          value={token}
+        />
+        <button className="primary-button setup-submit" type="submit">Continue</button>
+        <p className="setup-api-url">
+          API: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}
+        </p>
+      </form>
+    </main>
+  )
+}
 
-      <div className="ticks"></div>
+function PlaceholderRoute({ title, description }) {
+  return <PagePlaceholder title={title} description={description} />
+}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+function App() {
+  const [token, setToken] = useState(initialToken)
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+  function saveToken(value) {
+    window.sessionStorage.setItem('relay.demoToken', value)
+    setApiToken(value)
+    setToken(value)
+  }
+
+  function signOut() {
+    window.sessionStorage.removeItem('relay.demoToken')
+    setApiToken('')
+    setToken('')
+  }
+
+  if (!token) {
+    return <TokenSetup onSave={saveToken} />
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppShell onSignOut={signOut} />}>
+          <Route
+            element={
+              <PlaceholderRoute
+                title="Overview"
+                description="Your workflow and run activity will appear here."
+              />
+            }
+            path="/"
+          />
+          <Route
+            element={
+              <PlaceholderRoute
+                title="Workflows"
+                description="Browse, inspect, and publish workflow definitions."
+              />
+            }
+            path="/workflows"
+          />
+          <Route
+            element={
+              <PlaceholderRoute
+                title="Workflow details"
+                description="Inspect the canonical definition as JSON or a flowchart."
+              />
+            }
+            path="/workflows/:workflowId"
+          />
+          <Route
+            element={
+              <PlaceholderRoute
+                title="Workflow Builder"
+                description="Create a workflow definition and save it as a Draft."
+              />
+            }
+            path="/workflows/new"
+          />
+          <Route
+            element={
+              <PlaceholderRoute
+                title="Runs"
+                description="Filter run history and open a run trace."
+              />
+            }
+            path="/runs"
+          />
+          <Route
+            element={
+              <PlaceholderRoute
+                title="Run trace"
+                description="Inspect execution steps and available run actions."
+              />
+            }
+            path="/runs/:runId"
+          />
+          <Route element={<Navigate replace to="/" />} path="*" />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
 
