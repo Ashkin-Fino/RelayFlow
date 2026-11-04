@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +41,12 @@ public class WorkflowController {
 	@PostMapping
 	public ResponseEntity<WorkflowStatusResponse> create(@RequestBody JsonNode definition) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(workflowService.create(definition));
+	}
+
+	@PutMapping("/{workflowId}")
+	public WorkflowStatusResponse updateDraft(@PathVariable String workflowId,
+			@RequestBody JsonNode definition) {
+		return workflowService.updateDraft(workflowId, definition);
 	}
 
 	@PostMapping("/{workflowId}/publish")

@@ -10,7 +10,7 @@ The Phase 7 backend read APIs are implemented. Phase 7 is not complete: the oper
 - The trace includes steps ordered by execution sequence, with node ID/type, status, sequence, attempt, resolved input, output, error, timing, token counts, and idempotency key.
 - Approval-node traces include the associated approval ID, decision status, actor, timestamp, and optional reason.
 - Unknown run IDs return the established structured 404 response.
-- `GET /runs?workflowId={workflowId}` returns run summaries for an existing workflow, newest first. A missing query parameter returns 400; an unknown workflow returns 404.
+- `GET /runs` returns all run summaries newest first. Optional `workflowId` and `status` filters can be combined; supported statuses are `queued`, `running`, `waiting_approval`, `succeeded`, `failed`, and `cancelled`. Blank or unsupported filters return 400, and an unknown workflow returns 404.
 - `GET /workflows/{workflowId}` returns workflow metadata, timestamps, and the full stored definition. Unknown workflow IDs return 404.
 
 ## Verification

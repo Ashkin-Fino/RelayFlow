@@ -69,7 +69,7 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 - `POST /workflows/{workflowId}/trigger` triggers a published workflow which support manual trigger
 - `POST /hooks/{workflowId}` triggers a published which supports webhook trigger. Also requires a `X-Relay-Secret` header.
-- `GET /runs?workflowId={workflowId}` lists the workflow's runs, newest first.
+- `GET /runs` lists all runs, newest first. Optional `workflowId` and `status` filters can be used separately or together (for example, `?status=failed`); supported statuses are `queued`, `running`, `waiting_approval`, `succeeded`, `failed`, and `cancelled`. Blank or unsupported filters return 400, and an unknown workflow returns 404.
 - `GET /runs/{runId}` returns run state and ordered step trace details.
 
 ### Approval and cancellation API
@@ -81,7 +81,7 @@ These endpoints require `Authorization: Bearer <RELAY_DEMO_TOKEN>`:
 
 ### Current implementation status
 
-The planned backend API and execution features are implemented, including the Phase 7 read APIs: `GET /runs/{runId}` returns run state and ordered step trace details, `GET /runs?workflowId={workflowId}` lists a workflow's runs, and `GET /workflows/{workflowId}` returns workflow metadata and its full definition. Live testing with a real OpenRouter model and prompt-injection testing are confirmed complete; see [dev_report/phase_5.md](dev_report/phase_5.md). The Phase 7 console remains outstanding. The full end-to-end acceptance run, including the unchanged smoke test and kill/resume duplication check, will be completed after the frontend is implemented. See [dev_report/phase_7.md](dev_report/phase_7.md).
+The planned backend API and execution features are implemented, including the Phase 7 read APIs: `GET /runs` lists all runs newest first, optionally filtered by `workflowId` and/or `status`; `GET /runs/{runId}` returns run state and ordered step trace details; and `GET /workflows/{workflowId}` returns workflow metadata and its full definition. Live testing with a real OpenRouter model and prompt-injection testing are confirmed complete; see [dev_report/phase_5.md](dev_report/phase_5.md). The Phase 7 console remains outstanding. The full end-to-end acceptance run, including the unchanged smoke test and kill/resume duplication check, will be completed after the frontend is implemented. See [dev_report/phase_7.md](dev_report/phase_7.md).
 
 Sensitive `requires_approval` nodes are blocked by the worker unless an earlier successful approval step explicitly records `decision: approved`. Approval, rejection, and cancellation transitions are persisted in PostgreSQL and serialized against conflicting decisions.
 

@@ -11,7 +11,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.airtribe.relayflow.common.repository.WorkflowRepository;
 import com.airtribe.relayflow.config.AiProviderProperties;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+		"relay.ai.adapter=mock",
+		"relay.ai.base-url=http://localhost:9001/v1",
+		"relay.ai.model=alpha-small"
+})
 class RelayflowApplicationTests {
 	@Autowired
 	private AiProviderProperties aiProviderProperties;

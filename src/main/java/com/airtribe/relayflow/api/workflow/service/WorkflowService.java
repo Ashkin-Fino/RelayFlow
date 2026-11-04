@@ -13,6 +13,7 @@ import com.airtribe.relayflow.api.workflow.dto.WorkflowSummary;
 import com.airtribe.relayflow.common.entity.WorkflowEntity;
 import com.airtribe.relayflow.common.exception.WorkflowConflictException;
 import com.airtribe.relayflow.common.exception.WorkflowNotFoundException;
+import com.airtribe.relayflow.common.exception.WorkflowStateConflictException;
 import com.airtribe.relayflow.common.repository.WorkflowRepository;
 
 import tools.jackson.databind.JsonNode;
@@ -59,6 +60,29 @@ public class WorkflowService {
 			throw new WorkflowConflictException(id);
 		}
 		return new WorkflowStatusResponse(id, "draft");
+	}
+
+	@Transactional
+	public WorkflowStatusResponse updateDraft(String workflowId, JsonNode definition) {
+		WorkflowEntity workflow = workflowRepository.findById(workflowId)
+				.orElseThrow(() -> new WorkflowNotFoundException(workflowId));
+		if (!"draft".equals(workflow.getStatus())) {
+			throw new WorkflowStateConflictException(
+					"Workflow '" + workflowId + "' is not a Draft and cannot be edited");
+		}
+		validator.validate(definition);
+		String definitionId = definition.path("id").asString().trim();
+		if (!workflowId.equals(definitionId)) {
+			throw new IllegalArgumentException("Workflow ID in the definition must match the request path");
+		}
+
+		String name = definition.path("name").asString().trim();
+		String description = definition.path("description").isString()
+				? definition.path("description").asString()
+				: null;
+		workflow.updateDraft(name, description, definition);
+		workflowRepository.save(workflow);
+		return new WorkflowStatusResponse(workflowId, "draft");
 	}
 
 	@Transactional

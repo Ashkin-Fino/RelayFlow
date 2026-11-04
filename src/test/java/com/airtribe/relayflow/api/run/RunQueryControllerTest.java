@@ -37,7 +37,7 @@ class RunQueryControllerTest {
 
 	@Test
 	void listsWorkflowRunsWithBearerToken() throws Exception {
-		when(service.listByWorkflow("wf_1")).thenReturn(List.of(new RunSummary(
+		when(service.list("wf_1", null)).thenReturn(List.of(new RunSummary(
 				"run_1", "wf_1", "running", "manual", "notify", 2, 0,
 				false, null, null, null)));
 
@@ -51,8 +51,73 @@ class RunQueryControllerTest {
 	}
 
 	@Test
-	void workflowIdIsRequired() throws Exception {
+	void listsRunsByStatus() throws Exception {
+		when(service.list(null, "failed")).thenReturn(List.of(new RunSummary(
+				"run_1", "wf_1", "failed", "manual", "notify", 2, 0,
+				false, null, null, null)));
+
+		mockMvc.perform(get("/runs").param("status", "failed")
+						.header("Authorization", "Bearer " + DEMO_TOKEN))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].status").value("failed"));
+	}
+
+	@Test
+	void combinesWorkflowAndStatusFilters() throws Exception {
+		when(service.list("wf_1", "running")).thenReturn(List.of(new RunSummary(
+				"run_1", "wf_1", "running", "manual", "notify", 2, 0,
+				false, null, null, null)));
+
+		mockMvc.perform(get("/runs").param("workflowId", "wf_1").param("status", "running")
+						.header("Authorization", "Bearer " + DEMO_TOKEN))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].workflow_id").value("wf_1"))
+				.andExpect(jsonPath("$[0].status").value("running"));
+	}
+
+	@Test
+	void listsAllRunsWhenWorkflowFilterIsOmitted() throws Exception {
+		when(service.list(null, null)).thenReturn(List.of(new RunSummary(
+				"run_1", "wf_1", "succeeded", "manual", null, 1, 0,
+				false, null, null, null)));
+
 		mockMvc.perform(get("/runs").header("Authorization", "Bearer " + DEMO_TOKEN))
-				.andExpect(status().isBadRequest());
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$[0].run_id").value("run_1"))
+				.andExpect(jsonPath("$[0].workflow_id").value("wf_1"))
+				.andExpect(jsonPath("$[0].status").value("succeeded"));
+	}
+
+	@Test
+	void rejectsBlankWorkflowFilter() throws Exception {
+		when(service.list("", null)).thenThrow(new IllegalArgumentException("workflowId must not be blank"));
+
+		mockMvc.perform(get("/runs").param("workflowId", "")
+						.header("Authorization", "Bearer " + DEMO_TOKEN))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("invalid_request"));
+	}
+
+	@Test
+	void rejectsUnsupportedStatusFilter() throws Exception {
+		when(service.list(null, "unknown"))
+				.thenThrow(new IllegalArgumentException("unsupported status"));
+
+		mockMvc.perform(get("/runs").param("status", "unknown")
+						.header("Authorization", "Bearer " + DEMO_TOKEN))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("invalid_request"));
+	}
+
+	@Test
+	void rejectsBlankStatusFilter() throws Exception {
+		when(service.list(null, ""))
+				.thenThrow(new IllegalArgumentException("status must not be blank"));
+
+		mockMvc.perform(get("/runs").param("status", "")
+						.header("Authorization", "Bearer " + DEMO_TOKEN))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("invalid_request"));
 	}
 }

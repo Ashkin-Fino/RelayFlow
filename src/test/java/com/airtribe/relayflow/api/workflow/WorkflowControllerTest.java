@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -102,6 +103,22 @@ class WorkflowControllerTest {
 							{"id":"wf_demo","name":"Demo","trigger":{"type":"manual"},"entry":"hello","limits":{"max_steps":5},"nodes":[]}
 							"""))
 				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.id").value("wf_demo"))
+				.andExpect(jsonPath("$.status").value("draft"));
+	}
+
+	@Test
+	void updatesDraftUsingCanonicalWorkflowBody() throws Exception {
+		when(workflowService.updateDraft(Mockito.eq("wf_demo"), any(JsonNode.class)))
+				.thenReturn(new WorkflowStatusResponse("wf_demo", "draft"));
+
+		mockMvc.perform(put("/workflows/wf_demo")
+					.header("Authorization", "Bearer " + DEMO_TOKEN)
+					.contentType("application/json")
+					.content("""
+							{"id":"wf_demo","name":"Demo","trigger":{"type":"manual"},"entry":"hello","limits":{"max_steps":5},"nodes":[]}
+							"""))
+				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").value("wf_demo"))
 				.andExpect(jsonPath("$.status").value("draft"));
 	}

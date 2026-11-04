@@ -13,6 +13,9 @@ import com.airtribe.relayflow.common.repository.WorkflowRepository;
 
 @Service
 public class RunQueryService {
+	private static final List<String> RUN_STATUSES = List.of(
+			"queued", "running", "waiting_approval", "succeeded", "failed", "cancelled");
+
 	private final RunRepository runs;
 	private final WorkflowRepository workflows;
 
@@ -22,13 +25,47 @@ public class RunQueryService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<RunSummary> listByWorkflow(String workflowId) {
-		if (!workflows.existsById(workflowId)) {
+	public List<RunSummary> list(String workflowId, String status) {
+		validateWorkflowId(workflowId);
+		validateStatus(status);
+
+		if (workflowId != null && !workflows.existsById(workflowId)) {
 			throw new WorkflowNotFoundException(workflowId);
 		}
-		return runs.findByWorkflowIdOrderByCreatedAtDesc(workflowId).stream()
+
+		if (workflowId != null && status != null) {
+			return runs.findByWorkflowIdAndStatusOrderByCreatedAtDesc(workflowId, status).stream()
+					.map(this::toSummary)
+					.toList();
+		}
+		if (workflowId != null) {
+			return runs.findByWorkflowIdOrderByCreatedAtDesc(workflowId).stream()
+					.map(this::toSummary)
+					.toList();
+		}
+		if (status != null) {
+			return runs.findByStatusOrderByCreatedAtDesc(status).stream()
+					.map(this::toSummary)
+					.toList();
+		}
+		return runs.findAllByOrderByCreatedAtDesc().stream()
 				.map(this::toSummary)
 				.toList();
+	}
+
+	private void validateWorkflowId(String workflowId) {
+		if (workflowId != null && workflowId.isBlank()) {
+			throw new IllegalArgumentException("workflowId must not be blank");
+		}
+	}
+
+	private void validateStatus(String status) {
+		if (status != null && status.isBlank()) {
+			throw new IllegalArgumentException("status must not be blank");
+		}
+		if (status != null && !RUN_STATUSES.contains(status)) {
+			throw new IllegalArgumentException("status must be one of: " + String.join(", ", RUN_STATUSES));
+		}
 	}
 
 	private RunSummary toSummary(RunEntity run) {

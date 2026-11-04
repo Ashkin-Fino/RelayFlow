@@ -59,6 +59,19 @@ class DemoTokenFilterTest {
 		assertNotNull(chain.getRequest());
 	}
 
+	@Test
+	void allowsCorsPreflightWithoutBearerToken() throws Exception {
+		MockHttpServletRequest request = request();
+		request.setMethod("OPTIONS");
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		MockFilterChain chain = new MockFilterChain();
+
+		filter.doFilter(request, response, chain);
+
+		assertEquals(200, response.getStatus());
+		assertNotNull(chain.getRequest());
+	}
+
 	private MockHttpServletRequest request() {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setServletPath("/workflows");

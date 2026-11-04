@@ -276,6 +276,64 @@ The console only needs to be a simple operational interface; the correctness of 
 
 Credentials and secrets must never be logged. That includes bearer tokens, webhook secrets, and provider API keys.
 
+### 10.1 Run list API — global and workflow-scoped
+
+The run list is available through `GET /runs` with optional workflow and status filters:
+
+- `GET /runs` — returns all runs, newest first.
+- `GET /runs?workflowId={workflowId}` — returns runs belonging to the specified workflow, newest first.
+- `GET /runs?status={status}` — returns runs with the specified status, newest first.
+- `GET /runs?workflowId={workflowId}&status={status}` — applies both filters, newest first.
+
+The workflow-scoped endpoint is implemented by `RunController.list`, `RunQueryService.list`, and repository queries ordered by `createdAt` descending. The service verifies that a supplied workflow exists before querying; an unknown workflow ID returns the established structured 404 error. Supported statuses are `queued`, `running`, `waiting_approval`, `succeeded`, `failed`, and `cancelled`; a blank or unsupported status returns 400.
+
+Extend this implementation without changing the response contract:
+
+1. Make the `workflowId` and `status` request parameters optional.
+2. Validate a supplied workflow ID and status. Unknown workflows return 404; blank filters or unsupported statuses return 400.
+3. Query all runs, workflow runs, status-matching runs, or runs matching both filters, always ordered by `createdAt` descending in PostgreSQL.
+4. Map all result sets through the existing `RunQueryService.toSummary(RunEntity)` mapping and return `List<RunSummary>`.
+5. Do not add a pagination wrapper, a new DTO, new response properties, or different JSON naming for any filter combination.
+
+The JSON response for **both** request forms remains a top-level array of the existing `RunSummary` objects:
+
+```json
+[
+  {
+    "run_id": "run_example_001",
+    "workflow_id": "wf_expense_approval",
+    "status": "waiting_approval",
+    "trigger_type": "manual",
+    "current_node_id": "finance_gate",
+    "steps_executed": 2,
+    "ai_tokens_used": 0,
+    "cancel_requested": false,
+    "created_at": "2026-11-04T10:30:00Z",
+    "started_at": "2026-11-04T10:30:01Z",
+    "finished_at": null
+  }
+]
+```
+
+The field names and types are defined by `api.run.dto.RunSummary`: `run_id`, `workflow_id`, `status`, `trigger_type`, `current_node_id`, `steps_executed`, `ai_tokens_used`, `cancel_requested`, `created_at`, `started_at`, and `finished_at`. Nullable timestamps/node ID remain nullable. Both routes return the same fields, including when values are null.
+
+Expected behavior:
+
+| Request | Behavior |
+|---|---|
+| `GET /runs` | 200; all run summaries ordered by `created_at` descending; top-level JSON array |
+| `GET /runs?workflowId=wf_expense_approval` | 200; matching workflow's run summaries ordered newest first; same top-level array and fields |
+| `GET /runs?status=failed` | 200; matching run summaries ordered newest first; same top-level array and fields |
+| `GET /runs?workflowId=wf_expense_approval&status=waiting_approval` | 200; matching run summaries ordered newest first |
+| `GET /runs?workflowId=unknown_id` | 404; existing structured workflow-not-found error |
+| `GET /runs?workflowId=` | Reject as an invalid/blank filter with 400; do not silently interpret a supplied blank value as the global request |
+| `GET /runs?status=` | 400; reject a blank status filter |
+| `GET /runs?status=unknown` | 400; unsupported run status |
+
+The Overview page can call `GET /runs` for recent runs directly. The frontend no longer needs to fetch every workflow and aggregate separate workflow-scoped run lists. The Runs page can use `GET /runs` for its unfiltered view and add `workflowId` and/or `status` filters as needed.
+
+This is an additive project API extension. It does not alter any fixed smoke-test route or the existing run-summary JSON contract. Pagination and sort query parameters are not introduced.
+
 ## 11. Security and error behavior
 
 Authentication and error patterns must match the contract:
