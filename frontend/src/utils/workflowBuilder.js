@@ -20,6 +20,36 @@ export function createNodeId(type, nodes) {
   return id
 }
 
+export function workflowDefinitionToBuilderState(definition) {
+  const nodes = definition.nodes.map((node, index) => ({
+    id: node.id,
+    type: 'builder',
+    position: { x: 90 + (index % 3) * 270, y: 80 + Math.floor(index / 3) * 175 },
+    data: {
+      label: node.id,
+      nodeType: node.type,
+      params: node.params || {},
+      isEntry: node.id === definition.entry,
+    },
+  }))
+  const edges = definition.nodes.flatMap((node) => {
+    const branches = node.type === 'condition'
+      ? ['on_true', 'on_false']
+      : ['next']
+    return branches.flatMap((branch) => node[branch]
+      ? [{
+        id: `${node.id}-${branch}-${node[branch]}`,
+        source: node.id,
+        sourceHandle: branch,
+        target: node[branch],
+        type: 'smoothstep',
+        style: { stroke: '#7890b5', strokeWidth: 1.8 },
+      }]
+      : [])
+  })
+  return { nodes, edges }
+}
+
 export function serializeWorkflow({ id, name, description, triggerType, triggerConfig,
   maxSteps, timeoutSeconds, maxAiTokens, entry, nodes, edges }) {
   const definitionNodes = nodes.map((node) => {

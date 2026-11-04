@@ -10,6 +10,7 @@ You may reshape routes and response bodies if you document the changes clearly �
 2. These routes and behaviors:
    - `GET /workflows` — lists workflows with at least `id` and `status`.
    - `POST /workflows` — accepts a definition in the seed shape, creates a Draft.
+   - `PUT /workflows/{workflowId}` — replaces an existing Draft definition; published workflows cannot be edited.
    - `POST /workflows/{workflowId}/publish` — publishes, or rejects invalid definitions with 4xx.
    - `POST /workflows/{workflowId}/trigger` — body `{"input": {...}}`, returns a run id as `run_id` or `id`.
    - `POST /hooks/{workflowId}` — webhook trigger; secret checked from the `X-Relay-Secret` header; wrong/missing secret rejected 401/403; returns a run id.

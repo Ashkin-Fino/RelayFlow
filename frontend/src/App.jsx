@@ -80,6 +80,7 @@ function App() {
           <Route element={<WorkflowsPage />} path="/workflows" />
           <Route element={<WorkflowDetailPage />} path="/workflows/:workflowId" />
           <Route element={<WorkflowBuilderPage />} path="/workflows/new" />
+          <Route element={<WorkflowBuilderPage />} path="/workflows/:workflowId/edit" />
           <Route element={<RunsPage />} path="/runs" />
           <Route element={<RunTracePage />} path="/runs/:runId" />
           <Route element={<Navigate replace to="/" />} path="*" />

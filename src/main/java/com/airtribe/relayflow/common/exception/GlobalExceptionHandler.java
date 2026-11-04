@@ -35,7 +35,8 @@ public class GlobalExceptionHandler {
 		return error(HttpStatus.NOT_FOUND, exception.getMessage(), "run_not_found");
 	}
 
-	@ExceptionHandler({ApprovalConflictException.class, RunConflictException.class})
+	@ExceptionHandler({ApprovalConflictException.class, RunConflictException.class,
+			WorkflowStateConflictException.class})
 	public ResponseEntity<Map<String, Object>> approvalOrRunConflict(RuntimeException exception) {
 		return error(HttpStatus.CONFLICT, exception.getMessage(), "state_conflict");
 	}

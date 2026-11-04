@@ -83,4 +83,10 @@ public class WorkflowEntity {
 	public void publish() {
 		this.status = "published";
 	}
+
+	public void updateDraft(String name, String description, JsonNode definition) {
+		this.name = name;
+		this.description = description;
+		this.definition = definition;
+	}
 }

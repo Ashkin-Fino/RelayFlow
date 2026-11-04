@@ -15,6 +15,13 @@ export function createWorkflow(definition) {
   })
 }
 
+export function updateWorkflow(workflowId, definition) {
+  return apiRequest(`/workflows/${encodeURIComponent(workflowId)}`, {
+    method: 'PUT',
+    body: definition,
+  })
+}
+
 export function publishWorkflow(workflowId) {
   return apiRequest(`/workflows/${encodeURIComponent(workflowId)}/publish`, {
     method: 'POST',

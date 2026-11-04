@@ -17,6 +17,7 @@ import com.airtribe.relayflow.catalog.NodeCatalog;
 import com.airtribe.relayflow.common.entity.WorkflowEntity;
 import com.airtribe.relayflow.common.exception.WorkflowConflictException;
 import com.airtribe.relayflow.common.exception.WorkflowNotFoundException;
+import com.airtribe.relayflow.common.exception.WorkflowStateConflictException;
 import com.airtribe.relayflow.common.repository.WorkflowRepository;
 
 import tools.jackson.databind.JsonNode;
@@ -57,6 +58,36 @@ class WorkflowServiceTest {
 				WorkflowConflictException.class, () -> workflowService.create(validDefinition()));
 
 		assertEquals("Workflow 'wf_service_test' already exists", exception.getMessage());
+	}
+
+	@Test
+	void updatesExistingDraftDefinition() {
+		JsonNode definition = validDefinition();
+		WorkflowEntity entity = new WorkflowEntity(
+				"wf_service_test", "Old name", null, "draft", definition);
+		when(workflowRepository.findById("wf_service_test")).thenReturn(Optional.of(entity));
+		JsonNode updatedDefinition = new ObjectMapper().readTree(definition.toString()
+				.replace("Service test", "Updated name"));
+
+		WorkflowStatusResponse response = workflowService.updateDraft(
+				"wf_service_test", updatedDefinition);
+
+		assertEquals(new WorkflowStatusResponse("wf_service_test", "draft"), response);
+		assertEquals("Updated name", entity.getName());
+		assertEquals(updatedDefinition, entity.getDefinition());
+		verify(workflowRepository).save(entity);
+	}
+
+	@Test
+	void refusesToUpdatePublishedWorkflow() {
+		WorkflowEntity entity = new WorkflowEntity(
+				"wf_service_test", "Service test", null, "published", validDefinition());
+		when(workflowRepository.findById("wf_service_test")).thenReturn(Optional.of(entity));
+
+		org.junit.jupiter.api.Assertions.assertThrows(
+				WorkflowStateConflictException.class,
+				() -> workflowService.updateDraft("wf_service_test", validDefinition()));
+		Mockito.verify(workflowRepository, Mockito.never()).save(any(WorkflowEntity.class));
 	}
 
 	@Test

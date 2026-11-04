@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   addEdge,
   Background,
@@ -9,20 +9,22 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { ArrowLeft, Save } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
-import { createWorkflow } from '../api/workflowApi.js'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { createWorkflow, getWorkflow, updateWorkflow } from '../api/workflowApi.js'
 import ErrorState from '../components/common/ErrorState.jsx'
+import LoadingState from '../components/common/LoadingState.jsx'
 import BuilderFlowNode from '../components/builder/BuilderFlowNode.jsx'
 import NodeConfigPanel from '../components/builder/NodeConfigPanel.jsx'
 import NodePalette from '../components/builder/NodePalette.jsx'
 import PageHeader from '../components/common/PageHeader.jsx'
 import { createNodeId, createWorkflowId, nodeCatalog, serializeWorkflow,
-  triggerCatalog, validateWorkflowDraft } from '../utils/workflowBuilder.js'
+  triggerCatalog, validateWorkflowDraft, workflowDefinitionToBuilderState } from '../utils/workflowBuilder.js'
 
 const flowNodeTypes = { builder: BuilderFlowNode }
 
 function WorkflowBuilderPage() {
   const navigate = useNavigate()
+  const { workflowId: editingWorkflowId } = useParams()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [selectedNodeId, setSelectedNodeId] = useState(null)
@@ -38,6 +40,44 @@ function WorkflowBuilderPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [showValidation, setShowValidation] = useState(false)
+  const [loadingWorkflow, setLoadingWorkflow] = useState(Boolean(editingWorkflowId))
+  const [loadError, setLoadError] = useState(null)
+
+  useEffect(() => {
+    if (!editingWorkflowId) return undefined
+    let active = true
+    getWorkflow(editingWorkflowId)
+      .then((workflow) => {
+        if (!active) return
+        if (workflow.status !== 'draft') {
+          throw new Error('Only Draft workflows can be edited.')
+        }
+        const definition = workflow.definition
+        const graph = workflowDefinitionToBuilderState(definition)
+        setWorkflowId(definition.id)
+        setName(workflow.name || definition.name || '')
+        setDescription(workflow.description || definition.description || '')
+        setTriggerType(definition.trigger.type)
+        setTriggerConfig(Object.fromEntries(
+          Object.entries(definition.trigger).filter(([key]) => key !== 'type'),
+        ))
+        setMaxSteps(String(definition.limits.max_steps))
+        setTimeoutSeconds(definition.limits.timeout_seconds === undefined
+          ? '' : String(definition.limits.timeout_seconds))
+        setMaxAiTokens(definition.limits.max_ai_tokens === undefined
+          ? '' : String(definition.limits.max_ai_tokens))
+        setEntry(definition.entry)
+        setNodes(graph.nodes)
+        setEdges(graph.edges)
+      })
+      .catch((error) => {
+        if (active) setLoadError(error)
+      })
+      .finally(() => {
+        if (active) setLoadingWorkflow(false)
+      })
+    return () => { active = false }
+  }, [editingWorkflowId, setEdges, setNodes])
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null
   const selectedCatalogEntry = selectedNode
@@ -145,7 +185,9 @@ function WorkflowBuilderPage() {
 
     setSaving(true)
     try {
-      const response = await createWorkflow(definition)
+      const response = editingWorkflowId
+        ? await updateWorkflow(editingWorkflowId, definition)
+        : await createWorkflow(definition)
       if (!response?.id) throw new Error('The API response did not include a workflow ID.')
       navigate(`/workflows/${encodeURIComponent(response.id)}`)
     } catch (error) {
@@ -155,9 +197,29 @@ function WorkflowBuilderPage() {
     }
   }
 
+  if (loadingWorkflow) {
+    return <div className="operational-page builder-page"><LoadingState label="Loading Draft workflow…" /></div>
+  }
+
+  if (loadError) {
+    return (
+      <div className="operational-page builder-page">
+        <Link className="back-link" to={`/workflows/${encodeURIComponent(editingWorkflowId)}`}>
+          <ArrowLeft size={15} /> Workflow details
+        </Link>
+        <ErrorState error={loadError} title="Could not load Draft workflow" />
+      </div>
+    )
+  }
+
   return (
     <div className="operational-page builder-page">
-      <Link className="back-link" to="/workflows"><ArrowLeft size={15} /> Workflows</Link>
+      <Link
+        className="back-link"
+        to={editingWorkflowId ? `/workflows/${encodeURIComponent(editingWorkflowId)}` : '/workflows'}
+      >
+        <ArrowLeft size={15} /> {editingWorkflowId ? 'Workflow details' : 'Workflows'}
+      </Link>
       <PageHeader
         actions={
           <button
@@ -166,12 +228,13 @@ function WorkflowBuilderPage() {
             onClick={saveDraft}
             type="button"
           >
-            <Save aria-hidden="true" size={15} /> {saving ? 'Saving…' : 'Save as Draft'}
+            <Save aria-hidden="true" size={15} />
+            {saving ? 'Saving…' : editingWorkflowId ? 'Save Draft' : 'Save as Draft'}
           </button>
         }
         description="Build a canonical workflow definition. The API validates it when you save or publish."
         eyebrow="Workflow Builder"
-        title="Create workflow"
+        title={editingWorkflowId ? 'Edit workflow' : 'Create workflow'}
       />
 
       <div className="builder-settings-grid">
@@ -183,7 +246,11 @@ function WorkflowBuilderPage() {
           </label>
           <label className="builder-field">
             <span>Workflow ID *</span>
-            <input onChange={(event) => setWorkflowId(event.target.value)} value={workflowId} />
+            <input
+              disabled={Boolean(editingWorkflowId)}
+              onChange={(event) => setWorkflowId(event.target.value)}
+              value={workflowId}
+            />
             <small>Must be unique. Used in API paths and run history.</small>
           </label>
           <label className="builder-field">

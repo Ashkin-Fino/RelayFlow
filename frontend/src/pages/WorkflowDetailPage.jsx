@@ -105,12 +105,21 @@ function WorkflowDetailPage() {
           <PageHeader
             actions={
               <>
-                <Link
-                  className="secondary-button button-link"
-                  to={`/runs?workflowId=${encodeURIComponent(workflow.id)}`}
-                >
-                  View runs <ArrowRight size={15} />
-                </Link>
+                {workflow.status === 'draft' ? (
+                  <Link
+                    className="secondary-button button-link"
+                    to={`/workflows/${encodeURIComponent(workflow.id)}/edit`}
+                  >
+                    Edit <ArrowRight size={15} />
+                  </Link>
+                ) : (
+                  <Link
+                    className="secondary-button button-link"
+                    to={`/runs?workflowId=${encodeURIComponent(workflow.id)}`}
+                  >
+                    View runs <ArrowRight size={15} />
+                  </Link>
+                )}
                 {canManuallyTrigger && (
                   <button
                     className="primary-button button-link"
