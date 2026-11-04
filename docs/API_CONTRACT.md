@@ -14,6 +14,7 @@ You may reshape routes and response bodies if you document the changes clearly �
    - `POST /workflows/{workflowId}/trigger` — body `{"input": {...}}`, returns a run id as `run_id` or `id`.
    - `POST /hooks/{workflowId}` — webhook trigger; secret checked from the `X-Relay-Secret` header; wrong/missing secret rejected 401/403; returns a run id.
    - `GET /runs/{runId}` — returns at least `status` and `steps[]`, each step with a `node_id` and `status`.
+   - `GET /runs` — lists run summaries newest first; optional `workflowId` and `status` filters may be combined. Supported statuses are `queued`, `running`, `waiting_approval`, `succeeded`, `failed`, and `cancelled`; blank or unsupported filters return 400, and an unknown workflow returns 404.
    - `GET /approvals?status=pending` — lists pending approvals with at least `id` and `run_id`.
    - `POST /approvals/{approvalId}/approve` — resumes the paused run.
 3. The run status set: `queued`, `running`, `waiting_approval`, `succeeded`, `failed`, `cancelled`.

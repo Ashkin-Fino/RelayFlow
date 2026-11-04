@@ -32,8 +32,9 @@ public class RunController {
 	}
 
 	@GetMapping
-	public List<RunSummary> listByWorkflow(@RequestParam String workflowId) {
-		return queryService.listByWorkflow(workflowId);
+	public List<RunSummary> list(@RequestParam(required = false) String workflowId,
+			@RequestParam(required = false) String status) {
+		return queryService.list(workflowId, status);
 	}
 
 	@GetMapping("/{runId}")

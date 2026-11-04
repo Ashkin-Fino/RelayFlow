@@ -228,7 +228,7 @@ The following routes are the frontend integration contract. Fixed routes and res
 | Publish Draft | `POST /workflows/{workflowId}/publish` | Publish action; show backend validation errors |
 | Trigger workflow | `POST /workflows/{workflowId}/trigger` | Optional run action; body is `{"input": {...}}` |
 | List all runs / recent runs | `GET /runs` | Project extension; returns all run summaries newest first using the same JSON array and `RunSummary` fields as the workflow-scoped endpoint; used by Overview and the unfiltered Runs page |
-| List runs for workflow | `GET /runs?workflowId={workflowId}` | Project extension; returns the same JSON array shape filtered to the requested workflow |
+| Filter runs | `GET /runs?workflowId={workflowId}&status={status}` | Both filters are optional and combinable; supported statuses are `queued`, `running`, `waiting_approval`, `succeeded`, `failed`, and `cancelled` |
 | Run trace | `GET /runs/{runId}` | Load run summary and ordered steps |
 | Pending approvals | `GET /approvals?status=pending` | Used to associate pending approval records with run traces and approval state |
 | Approve | `POST /approvals/{approvalId}/approve` | Approve the pending approval |
@@ -239,14 +239,16 @@ The workflow detail and run-list routes are project extensions beyond the minimu
 
 ### 4.4 Run list retrieval and filtering
 
-The run-list API supports both global and workflow-scoped retrieval:
+The run-list API supports global, workflow-scoped, status-scoped, and combined retrieval:
 
 - `GET /runs` — returns all run summaries, newest first.
 - `GET /runs?workflowId={workflowId}` — returns run summaries for the specified workflow, newest first.
+- `GET /runs?status={status}` — returns run summaries for the specified status, newest first.
+- `GET /runs?workflowId={workflowId}&status={status}` — applies both filters, newest first.
 
-Both routes return the **same JSON array structure** and the same `RunSummary` fields. The only difference is the database filter applied. The `workflowId` query parameter is optional; omitting it selects all runs. Supplying an unknown workflow ID retains the existing 404 behavior. The global endpoint does not introduce a pagination envelope or rename/add/remove response fields.
+All filter combinations return the **same JSON array structure** and the same `RunSummary` fields. The `workflowId` and `status` query parameters are optional; omitting both selects all runs. Supplying an unknown workflow ID returns 404, while blank filters and unsupported statuses return 400. The endpoint does not introduce a pagination envelope or rename/add/remove response fields.
 
-The frontend should use the global endpoint directly for the Overview recent-runs section and the unfiltered Runs page. This is simpler and avoids fetching the workflow list, making one run request per workflow, and merging/sorting the results in the browser. When a workflow filter is selected, call the same endpoint with `?workflowId=...`.
+The frontend should use the global endpoint directly for the Overview recent-runs section and the unfiltered Runs page. This is simpler and avoids fetching the workflow list, making one run request per workflow, and merging/sorting the results in the browser. When workflow or status filters are selected, call the same endpoint with the corresponding query parameters.
 
 The “Pending approval” filter is a presentation filter for runs whose status is `waiting_approval`. Approval details and actionable approval IDs are obtained from the approval/run trace APIs; do not infer an approval ID from a run ID.
 
