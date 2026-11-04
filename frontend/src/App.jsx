@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { setApiToken } from './api/client.js'
 import AppShell from './components/layout/AppShell.jsx'
-import PagePlaceholder from './components/common/PagePlaceholder.jsx'
 import OverviewPage from './pages/OverviewPage.jsx'
 import RunsPage from './pages/RunsPage.jsx'
 import RunTracePage from './pages/RunTracePage.jsx'
 import WorkflowDetailPage from './pages/WorkflowDetailPage.jsx'
+import WorkflowBuilderPage from './pages/WorkflowBuilderPage.jsx'
 import WorkflowsPage from './pages/WorkflowsPage.jsx'
 import './App.css'
 
@@ -53,10 +53,6 @@ function TokenSetup({ onSave }) {
   )
 }
 
-function PlaceholderRoute({ title, description }) {
-  return <PagePlaceholder title={title} description={description} />
-}
-
 function App() {
   const [token, setToken] = useState(initialToken)
 
@@ -83,15 +79,7 @@ function App() {
           <Route element={<OverviewPage />} path="/" />
           <Route element={<WorkflowsPage />} path="/workflows" />
           <Route element={<WorkflowDetailPage />} path="/workflows/:workflowId" />
-          <Route
-            element={
-              <PlaceholderRoute
-                title="Workflow Builder"
-                description="Create a workflow definition and save it as a Draft."
-              />
-            }
-            path="/workflows/new"
-          />
+          <Route element={<WorkflowBuilderPage />} path="/workflows/new" />
           <Route element={<RunsPage />} path="/runs" />
           <Route element={<RunTracePage />} path="/runs/:runId" />
           <Route element={<Navigate replace to="/" />} path="*" />

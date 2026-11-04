@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Play } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { triggerWorkflow, getWorkflow } from '../api/workflowApi.js'
+import { getWorkflow, publishWorkflow, triggerWorkflow } from '../api/workflowApi.js'
 import ErrorState from '../components/common/ErrorState.jsx'
 import LoadingState from '../components/common/LoadingState.jsx'
 import PageHeader from '../components/common/PageHeader.jsx'
@@ -20,6 +20,8 @@ function WorkflowDetailPage() {
   const [triggerInput, setTriggerInput] = useState('{\n  \n}')
   const [triggerError, setTriggerError] = useState(null)
   const [triggering, setTriggering] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [publishError, setPublishError] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -80,6 +82,19 @@ function WorkflowDetailPage() {
     }
   }
 
+  async function handlePublish() {
+    setPublishing(true)
+    setPublishError(null)
+    try {
+      await publishWorkflow(workflowId)
+      setRefreshKey((key) => key + 1)
+    } catch (requestError) {
+      setPublishError(requestError)
+    } finally {
+      setPublishing(false)
+    }
+  }
+
   return (
     <div className="operational-page">
       <Link className="back-link" to="/workflows"><ArrowLeft size={15} /> Workflows</Link>
@@ -110,12 +125,24 @@ function WorkflowDetailPage() {
                     <Play aria-hidden="true" size={15} /> Trigger
                   </button>
                 )}
+                {workflow.status === 'draft' && (
+                  <button
+                    className="primary-button"
+                    disabled={publishing}
+                    onClick={handlePublish}
+                    type="button"
+                  >
+                    {publishing ? 'Publishing…' : 'Publish workflow'}
+                  </button>
+                )}
               </>
             }
             description={workflow.description || 'Workflow definition and execution settings.'}
             eyebrow="Workflow details"
             title={workflow.name}
           />
+
+          {publishError && <ErrorState error={publishError} title="Could not publish workflow" />}
 
           <section aria-label="Workflow metadata" className="workflow-detail-summary">
             <div className="workflow-status-block">
