@@ -25,7 +25,8 @@ public class DemoTokenFilter extends OncePerRequestFilter {
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
 		String path = request.getServletPath();
-		return path.equals("/actuator") || path.startsWith("/actuator/")
+		return request.getMethod().equalsIgnoreCase("OPTIONS")
+				|| path.equals("/actuator") || path.startsWith("/actuator/")
 				|| path.startsWith("/hooks/") || path.equals("/error");
 	}
 
