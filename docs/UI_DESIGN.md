@@ -59,7 +59,7 @@ It should provide a concise operational snapshot:
 - Total workflows, with Draft and Published counts.
 - Run counts grouped by lifecycle status.
 - Runs currently waiting for approval.
-- Recent runs table/list with workflow, run ID, status, and start time.
+- Recent runs table/list with workflow, run ID, status, and start time. Retrieve these directly from the global `GET /runs` endpoint; the Overview page does not need to fetch every workflow first or aggregate workflow-scoped run lists.
 - Quick links to the Workflows, Runs, and Workflow Builder sections.
 
 The page obtains its data from the workflow and run APIs. It must not query the database or worker directly.
@@ -227,7 +227,8 @@ The following routes are the frontend integration contract. Fixed routes and res
 | Workflow detail | `GET /workflows/{workflowId}` | Project extension; load metadata and stored definition |
 | Publish Draft | `POST /workflows/{workflowId}/publish` | Publish action; show backend validation errors |
 | Trigger workflow | `POST /workflows/{workflowId}/trigger` | Optional run action; body is `{"input": {...}}` |
-| List runs for workflow | `GET /runs?workflowId={workflowId}` | Project extension; used for run tables and workflow-specific run filter |
+| List all runs / recent runs | `GET /runs` | Project extension; returns all run summaries newest first using the same JSON array and `RunSummary` fields as the workflow-scoped endpoint; used by Overview and the unfiltered Runs page |
+| List runs for workflow | `GET /runs?workflowId={workflowId}` | Project extension; returns the same JSON array shape filtered to the requested workflow |
 | Run trace | `GET /runs/{runId}` | Load run summary and ordered steps |
 | Pending approvals | `GET /approvals?status=pending` | Used to associate pending approval records with run traces and approval state |
 | Approve | `POST /approvals/{approvalId}/approve` | Approve the pending approval |
@@ -236,19 +237,16 @@ The following routes are the frontend integration contract. Fixed routes and res
 
 The workflow detail and run-list routes are project extensions beyond the minimum fixed smoke-test contract. Their implementation and response fields must remain aligned with the backend DTOs and `docs/API_CONTRACT.md`.
 
-### 4.4 Run list aggregation and filtering
+### 4.4 Run list retrieval and filtering
 
-The current run-list API is workflow-scoped: `GET /runs?workflowId={workflowId}`. It is not a global run-list endpoint.
+The run-list API supports both global and workflow-scoped retrieval:
 
-Until a global run-list API is explicitly added and documented, the frontend must:
+- `GET /runs` — returns all run summaries, newest first.
+- `GET /runs?workflowId={workflowId}` — returns run summaries for the specified workflow, newest first.
 
-1. Fetch the workflow list.
-2. Fetch the runs for each workflow using its workflow ID.
-3. Combine the returned run summaries in the frontend.
-4. Sort by the available timestamp field, newest first.
-5. Apply workflow and status filters client-side.
+Both routes return the **same JSON array structure** and the same `RunSummary` fields. The only difference is the database filter applied. The `workflowId` query parameter is optional; omitting it selects all runs. Supplying an unknown workflow ID retains the existing 404 behavior. The global endpoint does not introduce a pagination envelope or rename/add/remove response fields.
 
-Do not invent or call an undocumented `GET /runs` global endpoint. If the number of workflows grows substantially, a documented paginated global run-list endpoint can be considered as a separate backend change.
+The frontend should use the global endpoint directly for the Overview recent-runs section and the unfiltered Runs page. This is simpler and avoids fetching the workflow list, making one run request per workflow, and merging/sorting the results in the browser. When a workflow filter is selected, call the same endpoint with `?workflowId=...`.
 
 The “Pending approval” filter is a presentation filter for runs whose status is `waiting_approval`. Approval details and actionable approval IDs are obtained from the approval/run trace APIs; do not infer an approval ID from a run ID.
 
