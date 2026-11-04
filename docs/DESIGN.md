@@ -276,6 +276,58 @@ The console only needs to be a simple operational interface; the correctness of 
 
 Credentials and secrets must never be logged. That includes bearer tokens, webhook secrets, and provider API keys.
 
+### 10.1 Run list API — global and workflow-scoped
+
+The run list supports two request forms through the same `GET /runs` route:
+
+- `GET /runs` — returns all runs, newest first.
+- `GET /runs?workflowId={workflowId}` — returns runs belonging to the specified workflow, newest first.
+
+The existing workflow-scoped endpoint is implemented by `RunController.listByWorkflow(workflowId)`, `RunQueryService.listByWorkflow(workflowId)`, and `RunRepository.findByWorkflowIdOrderByCreatedAtDesc(workflowId)`. The service verifies that the workflow exists before querying; an unknown workflow ID returns the established structured 404 error. The controller currently requires `workflowId`, so a request without it returns 400.
+
+Extend this implementation without changing the response contract:
+
+1. Make the controller's `workflowId` request parameter optional.
+2. When `workflowId` is present, keep the current workflow-existence check and call the existing workflow-scoped repository query. Preserve its 404 behavior for an unknown workflow.
+3. When `workflowId` is omitted, query all runs ordered by `createdAt` descending. Add a repository method such as `findAllByOrderByCreatedAtDesc()` so sorting occurs in PostgreSQL rather than in the browser.
+4. Map both result sets through the existing `RunQueryService.toSummary(RunEntity)` mapping and return `List<RunSummary>`.
+5. Do not add a pagination wrapper, a new DTO, new response properties, or different JSON naming for the global route. Do not change the existing workflow-scoped response.
+
+The JSON response for **both** request forms remains a top-level array of the existing `RunSummary` objects:
+
+```json
+[
+  {
+    "run_id": "run_example_001",
+    "workflow_id": "wf_expense_approval",
+    "status": "waiting_approval",
+    "trigger_type": "manual",
+    "current_node_id": "finance_gate",
+    "steps_executed": 2,
+    "ai_tokens_used": 0,
+    "cancel_requested": false,
+    "created_at": "2026-11-04T10:30:00Z",
+    "started_at": "2026-11-04T10:30:01Z",
+    "finished_at": null
+  }
+]
+```
+
+The field names and types are defined by `api.run.dto.RunSummary`: `run_id`, `workflow_id`, `status`, `trigger_type`, `current_node_id`, `steps_executed`, `ai_tokens_used`, `cancel_requested`, `created_at`, `started_at`, and `finished_at`. Nullable timestamps/node ID remain nullable. Both routes return the same fields, including when values are null.
+
+Expected behavior:
+
+| Request | Behavior |
+|---|---|
+| `GET /runs` | 200; all run summaries ordered by `created_at` descending; top-level JSON array |
+| `GET /runs?workflowId=wf_expense_approval` | 200; matching workflow's run summaries ordered newest first; same top-level array and fields |
+| `GET /runs?workflowId=unknown_id` | 404; existing structured workflow-not-found error |
+| `GET /runs?workflowId=` | Reject as an invalid/blank filter with 400; do not silently interpret a supplied blank value as the global request |
+
+The Overview page can call `GET /runs` for recent runs directly. The frontend no longer needs to fetch every workflow and aggregate separate workflow-scoped run lists. The Runs page can use `GET /runs` for its unfiltered view and `GET /runs?workflowId=...` when a workflow filter is selected.
+
+This is an additive project API extension. It does not alter any fixed smoke-test route or the existing run-summary JSON contract. No status, pagination, or sort query parameters are introduced in this change.
+
 ## 11. Security and error behavior
 
 Authentication and error patterns must match the contract:
