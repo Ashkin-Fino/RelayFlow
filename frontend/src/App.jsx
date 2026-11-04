@@ -3,6 +3,9 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { setApiToken } from './api/client.js'
 import AppShell from './components/layout/AppShell.jsx'
 import PagePlaceholder from './components/common/PagePlaceholder.jsx'
+import OverviewPage from './pages/OverviewPage.jsx'
+import RunsPage from './pages/RunsPage.jsx'
+import WorkflowsPage from './pages/WorkflowsPage.jsx'
 import './App.css'
 
 const initialToken = window.sessionStorage.getItem('relay.demoToken') ?? ''
@@ -75,24 +78,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell onSignOut={signOut} />}>
-          <Route
-            element={
-              <PlaceholderRoute
-                title="Overview"
-                description="Your workflow and run activity will appear here."
-              />
-            }
-            path="/"
-          />
-          <Route
-            element={
-              <PlaceholderRoute
-                title="Workflows"
-                description="Browse, inspect, and publish workflow definitions."
-              />
-            }
-            path="/workflows"
-          />
+          <Route element={<OverviewPage />} path="/" />
+          <Route element={<WorkflowsPage />} path="/workflows" />
           <Route
             element={
               <PlaceholderRoute
@@ -111,15 +98,7 @@ function App() {
             }
             path="/workflows/new"
           />
-          <Route
-            element={
-              <PlaceholderRoute
-                title="Runs"
-                description="Filter run history and open a run trace."
-              />
-            }
-            path="/runs"
-          />
+          <Route element={<RunsPage />} path="/runs" />
           <Route
             element={
               <PlaceholderRoute
