@@ -90,6 +90,22 @@ class WorkflowDefinitionValidatorTest {
 		assertError("invalid_pointer", workflow);
 	}
 
+	@Test
+	void acceptsFiveFieldScheduleCronExpression() throws IOException {
+		ObjectNode workflow = parseWorkflow();
+		workflow.putObject("trigger").put("type", "schedule").put("cron", "*/5 * * * *");
+
+		assertDoesNotThrow(() -> validator.validate(workflow));
+	}
+
+	@Test
+	void rejectsInvalidScheduleCronExpression() throws IOException {
+		ObjectNode workflow = parseWorkflow();
+		workflow.putObject("trigger").put("type", "schedule").put("cron", "not a cron");
+
+		assertError("invalid_cron_expression", workflow);
+	}
+
 	private ObjectNode parseWorkflow() throws IOException {
 		return (ObjectNode) objectMapper.readTree("""
 				{

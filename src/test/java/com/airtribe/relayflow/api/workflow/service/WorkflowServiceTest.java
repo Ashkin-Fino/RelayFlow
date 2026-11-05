@@ -16,6 +16,7 @@ import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
 import com.airtribe.relayflow.catalog.NodeCatalog;
 import com.airtribe.relayflow.common.entity.WorkflowEntity;
 import com.airtribe.relayflow.common.exception.WorkflowConflictException;
+import com.airtribe.relayflow.common.exception.WorkflowDefinitionException;
 import com.airtribe.relayflow.common.exception.WorkflowNotFoundException;
 import com.airtribe.relayflow.common.exception.WorkflowStateConflictException;
 import com.airtribe.relayflow.common.repository.WorkflowRepository;
@@ -25,6 +26,7 @@ import tools.jackson.databind.ObjectMapper;
 
 class WorkflowServiceTest {
 	private final WorkflowRepository workflowRepository = Mockito.mock(WorkflowRepository.class);
+	private final WorkflowScheduleService workflowScheduleService = Mockito.mock(WorkflowScheduleService.class);
 	private WorkflowService workflowService;
 
 	@BeforeEach
@@ -32,7 +34,8 @@ class WorkflowServiceTest {
 		ObjectMapper objectMapper = new ObjectMapper();
 		workflowService = new WorkflowService(
 				workflowRepository,
-				new WorkflowDefinitionValidator(new NodeCatalog(objectMapper)));
+				new WorkflowDefinitionValidator(new NodeCatalog(objectMapper)),
+				workflowScheduleService);
 	}
 
 	@Test
@@ -101,6 +104,24 @@ class WorkflowServiceTest {
 		assertEquals(new WorkflowStatusResponse("wf_service_test", "published"), response);
 		assertEquals("published", entity.getStatus());
 		verify(workflowRepository).save(entity);
+		verify(workflowScheduleService).syncPublishedWorkflow("wf_service_test", entity.getDefinition());
+	}
+
+	@Test
+	void rejectsInvalidScheduleCronBeforePublishing() {
+		JsonNode definition = new ObjectMapper().readTree(validDefinition().toString()
+				.replace("\"type\":\"manual\"", "\"type\":\"schedule\",\"cron\":\"invalid cron\""));
+		WorkflowEntity entity = new WorkflowEntity(
+				"wf_service_test", "Service test", null, "draft", definition);
+		when(workflowRepository.findById("wf_service_test")).thenReturn(Optional.of(entity));
+
+		WorkflowDefinitionException exception = org.junit.jupiter.api.Assertions.assertThrows(
+				WorkflowDefinitionException.class, () -> workflowService.publish("wf_service_test"));
+
+		assertEquals("invalid_cron_expression", exception.code());
+		assertEquals("draft", entity.getStatus());
+		Mockito.verify(workflowRepository, Mockito.never()).save(entity);
+		Mockito.verifyNoInteractions(workflowScheduleService);
 	}
 
 	@Test

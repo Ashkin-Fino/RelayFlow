@@ -81,6 +81,14 @@ public class WorkflowDefinitionValidator {
 			throw invalid("invalid_trigger_type", "Workflow has unknown trigger type '" + triggerType + "'");
 		}
 		validateParameters(trigger, triggerSpec.path("config"), "Trigger '" + triggerType + "'");
+		if ("schedule".equals(triggerType)) {
+			try {
+				CronSchedule.parse(trigger.path("cron").asString());
+			} catch (IllegalArgumentException exception) {
+				throw invalid("invalid_cron_expression",
+						"Trigger 'schedule' parameter 'cron' must be a valid five-field cron expression");
+			}
+		}
 	}
 
 	private void validateLimits(JsonNode limits) {

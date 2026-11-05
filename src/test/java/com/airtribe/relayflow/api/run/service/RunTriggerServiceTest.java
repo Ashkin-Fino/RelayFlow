@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -34,7 +35,7 @@ class RunTriggerServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		runTriggerService = new RunTriggerService(workflowRepository, runRepository, queueJobRepository);
+		runTriggerService = new RunTriggerService(workflowRepository, runRepository, queueJobRepository, objectMapper);
 	}
 
 	@Test
@@ -76,6 +77,21 @@ class RunTriggerServiceTest {
 		assertEquals("ord_1", runCaptor.getValue().getTriggerInput().path("order_id").asString());
 		verify(queueJobRepository).enqueue(response.runId());
 		verify(queueJobRepository, never()).complete(anyLong(), anyString(), anyString());
+	}
+
+	@Test
+	void scheduledTriggerEnqueuesAnEmptyInputObject() {
+		when(workflowRepository.findById("wf_trigger_test"))
+				.thenReturn(Optional.of(workflow("schedule", "")));
+
+		var response = runTriggerService.triggerScheduled("wf_trigger_test");
+
+		ArgumentCaptor<RunEntity> runCaptor = ArgumentCaptor.forClass(RunEntity.class);
+		verify(runRepository).saveAndFlush(runCaptor.capture());
+		assertEquals("schedule", runCaptor.getValue().getTriggerType());
+		assertTrue(runCaptor.getValue().getTriggerInput().isObject());
+		assertEquals(0, runCaptor.getValue().getTriggerInput().size());
+		verify(queueJobRepository).enqueue(response.runId());
 	}
 
 	private WorkflowEntity workflow(String triggerType, String secret) {

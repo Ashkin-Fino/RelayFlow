@@ -25,7 +25,7 @@ This design is intentionally local-first: the mock world and the Python verifica
 - AWS hosting.
 - Enterprise identity, multi-tenancy, and role isolation beyond a shared demo token.
 - Multi-worker cluster orchestration; start with one worker and use leases/locking patterns.
-- Natural-language compiler, cron schedules, AI token caps, and wall-clock timeouts as Good To Have.
+- Natural-language compiler, AI token caps, and wall-clock timeouts as Good To Have. Cron schedule triggers are implemented.
 - Exactly-once guarantees for arbitrary external systems that do not support idempotency semantics.
 
 ## 2. Design decisions
@@ -360,7 +360,7 @@ The implementation is only done when the following are green:
 - side-effect traces remain durable through worker restarts
 - run statuses remain within the required vocabulary
 
-The project may include Good To Have items such as the NL compiler or cron schedules, but only after the Must Have contract is green and durable.
+The project may include Good To Have items such as the NL compiler after the Must Have contract is green and durable. Cron schedule triggers are implemented.
 
 ## 13. Recommended delivery strategy
 
@@ -513,7 +513,7 @@ python scripts/duplication_check.py --url http://localhost:9210
 ### Good To Have
 - [ ] Natural-language compiler and refusal path.
 - [ ] Evaluation over `nl_eval.jsonl`.
-- [ ] Cron schedules.
+- [x] Cron schedules.
 - [ ] Timeout and AI token caps.
 - [ ] Numbered immutable workflow versions.
 

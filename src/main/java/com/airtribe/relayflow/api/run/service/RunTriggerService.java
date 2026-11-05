@@ -20,18 +20,21 @@ import com.airtribe.relayflow.common.repository.RunRepository;
 import com.airtribe.relayflow.common.repository.WorkflowRepository;
 
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class RunTriggerService {
 	private final WorkflowRepository workflowRepository;
 	private final RunRepository runRepository;
 	private final QueueJobRepository queueJobRepository;
+	private final ObjectMapper objectMapper;
 
 	public RunTriggerService(WorkflowRepository workflowRepository, RunRepository runRepository,
-			QueueJobRepository queueJobRepository) {
+			QueueJobRepository queueJobRepository, ObjectMapper objectMapper) {
 		this.workflowRepository = workflowRepository;
 		this.runRepository = runRepository;
 		this.queueJobRepository = queueJobRepository;
+		this.objectMapper = objectMapper;
 	}
 
 	@Transactional
@@ -61,6 +64,15 @@ public class RunTriggerService {
 			throw new InvalidTriggerInputException("Webhook body must be a JSON object");
 		}
 		return enqueue(workflow, "webhook", body);
+	}
+
+	@Transactional
+	public RunAcceptedResponse triggerScheduled(String workflowId) {
+		WorkflowEntity workflow = publishedWorkflow(workflowId);
+		if (!"schedule".equals(triggerType(workflow))) {
+			throw new InvalidTriggerTypeException("schedule");
+		}
+		return enqueue(workflow, "schedule", objectMapper.createObjectNode());
 	}
 
 	private WorkflowEntity publishedWorkflow(String workflowId) {

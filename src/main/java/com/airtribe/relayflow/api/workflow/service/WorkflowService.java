@@ -22,11 +22,13 @@ import tools.jackson.databind.JsonNode;
 public class WorkflowService {
 	private final WorkflowRepository workflowRepository;
 	private final WorkflowDefinitionValidator validator;
+	private final WorkflowScheduleService workflowScheduleService;
 
 	public WorkflowService(WorkflowRepository workflowRepository,
-			WorkflowDefinitionValidator validator) {
+			WorkflowDefinitionValidator validator, WorkflowScheduleService workflowScheduleService) {
 		this.workflowRepository = workflowRepository;
 		this.validator = validator;
+		this.workflowScheduleService = workflowScheduleService;
 	}
 
 	public List<WorkflowSummary> list() {
@@ -92,6 +94,7 @@ public class WorkflowService {
 		validator.validate(workflow.getDefinition());
 		workflow.publish();
 		workflowRepository.save(workflow);
+		workflowScheduleService.syncPublishedWorkflow(workflowId, workflow.getDefinition());
 		return new WorkflowStatusResponse(workflowId, "published");
 	}
 }

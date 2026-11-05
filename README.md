@@ -92,7 +92,7 @@ npm run dev
 
 The console uses `http://localhost:8080` by default; set `VITE_API_BASE_URL` before starting Vite to use a different API URL. Enter the configured demo bearer token in the console. The backend's `RELAY_FRONTEND_ORIGIN` setting controls allowed browser origins.
 
-The console includes Overview, Workflows, and Runs pages; workflow JSON and flowchart details; run traces with guarded approval and cancellation actions; and a catalog-driven workflow builder. New workflows are saved as Drafts. Drafts can be edited and published from the console; published definitions remain read-only. Schedule triggers can be authored with a cron expression, but the backend does not yet execute cron schedules.
+The console includes Overview, Workflows, and Runs pages; workflow JSON and flowchart details; run traces with guarded approval and cancellation actions; and a catalog-driven workflow builder. New workflows are saved as Drafts. Drafts can be edited and published from the console; published definitions remain read-only. Schedule triggers use validated five-field cron expressions and create normal queued runs on their scheduled minute. Cron times are interpreted in UTC; missed occurrences are not replayed.
 
 ### Current implementation status
 
@@ -122,6 +122,6 @@ To run worker-only (same JAR and same PostgreSQL database):
 java -jar target\relayflow-0.0.1-SNAPSHOT.jar --spring.main.web-application-type=none --relay.worker.enabled=true --relay.worker.id=worker-1
 ```
 
-The worker polls every 1,000 ms by default and uses a 60-second queue lease. These can be configured with RELAY_WORKER_POLL_INTERVAL_MS and RELAY_WORKER_LEASE_SECONDS. SERVER_PORT overrides the API port.
+The worker polls every 1,000 ms by default and uses a 60-second queue lease. These can be configured with RELAY_WORKER_POLL_INTERVAL_MS and RELAY_WORKER_LEASE_SECONDS. The scheduler checks for due cron triggers every 1,000 ms by default; configure this with RELAY_SCHEDULE_POLL_INTERVAL_MS. The scheduled tasks use a two-thread pool so workflow execution does not block cron dispatch. SERVER_PORT overrides the API port.
 
 Per-node retries are configured with `RELAY_WORKER_RETRY_MAX_ATTEMPTS` (default 3 total attempts), `RELAY_WORKER_RETRY_INITIAL_DELAY_SECONDS` (default 2), and `RELAY_WORKER_RETRY_MAX_DELAY_SECONDS` (default 30). Backoff doubles after each failed attempt and is stored using the PostgreSQL queue availability timestamp.

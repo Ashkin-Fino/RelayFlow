@@ -91,15 +91,15 @@ Indexes: `(status, created_at)`, `(run_id,node_id)`. A composite foreign key req
 | `created_at`, `updated_at` | `timestamptz` | Required |
 Indexes: partial ready-job index on `(available_at, id)` for queued rows and lease-expiry index for leased rows. A single row is rescheduled for delays/retries and cannot represent concurrent jobs for one run. Lease owner and expiry are both present only while `leased`.
 
-## 7 `schedules` (Good To Have; not in initial migration)
-`id bigserial PK`, `workflow_id varchar(128) FK`, `cron text`, `next_fire_at timestamptz`, `enabled boolean`, `created_at timestamptz`, `updated_at timestamptz`. Poll at short intervals with 1-minute granularity; each fire creates a normal run.
+## 7 `workflow_schedules`
+`workflow_id varchar(128) PK/FK`, `cron text`, `next_fire_at timestamptz`, `enabled boolean`, `created_at timestamptz`, `updated_at timestamptz`. One row is kept for each published schedule-triggered workflow. Five-field cron expressions are interpreted in UTC; a short poll interval and row locking with `SKIP LOCKED` allow multiple application instances to dispatch a due occurrence only once. Each fire creates a normal scheduled run and advances to the next future cron occurrence without catch-up runs.
 
 ## 8 Entity relationship diagram
 ```mermaid
 erDiagram
     WORKFLOWS ||--o{ RUNS : starts
     WORKFLOWS ||--o{ WORKFLOW_VERSIONS : versions
-    WORKFLOWS ||--o{ SCHEDULES : schedules
+    WORKFLOWS ||--o| WORKFLOW_SCHEDULES : schedules
     RUNS ||--o{ STEPS : records
     RUNS ||--o{ APPROVALS : requires
     RUNS ||--o{ QUEUE_JOBS : queued_as
@@ -151,9 +151,8 @@ erDiagram
       integer version_number
       jsonb definition
     }
-    SCHEDULES {
-      bigint id PK
-      varchar workflow_id FK
+    WORKFLOW_SCHEDULES {
+      varchar workflow_id PK, FK
       text cron
       timestamptz next_fire_at
       boolean enabled
@@ -172,4 +171,4 @@ erDiagram
 
 ## 10 Initial migration scope
 
-The initial Flyway migration creates `workflows`, `runs`, `steps`, `approvals`, and `queue_jobs`, plus the constraints and indexes above. `workflow_versions` and `schedules` remain Good To Have and are intentionally excluded. Seed insertion should run as one transaction and use conflict-safe inserts. The SQL migration is the executable schema source; keep this reference and `docs/DATA_MODEL.md` aligned with it.
+Flyway migrations create `workflows`, `runs`, `steps`, `approvals`, `queue_jobs`, and `workflow_schedules`, plus the constraints and indexes above. `workflow_versions` remains Good To Have and is intentionally excluded. Seed insertion should run as one transaction and use conflict-safe inserts. The SQL migration is the executable schema source; keep this reference and `docs/DATA_MODEL.md` aligned with it.
