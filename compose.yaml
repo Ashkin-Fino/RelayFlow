@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: relayflow
+      POSTGRES_USER: ${RELAY_DB_USER:-relayflow}
+      POSTGRES_PASSWORD: ${RELAY_DB_PASSWORD:?Set RELAY_DB_PASSWORD in docker.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  mock-world:
+    build:
+      context: .
+      dockerfile: docker/mock-world.Dockerfile
+    restart: unless-stopped
+
+  mock-provider:
+    build:
+      context: .
+      dockerfile: docker/mock-provider.Dockerfile
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mock-world:
+        condition: service_healthy
+      mock-provider:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      RELAY_DB_URL: jdbc:postgresql://db:5432/relayflow
+      RELAY_DB_USER: ${RELAY_DB_USER:-relayflow}
+      RELAY_DB_PASSWORD: ${RELAY_DB_PASSWORD:?Set RELAY_DB_PASSWORD in docker.env}
+      RELAY_DEMO_TOKEN: ${RELAY_DEMO_TOKEN:?Set RELAY_DEMO_TOKEN in docker.env}
+      RELAY_SEED_ENABLED: ${RELAY_SEED_ENABLED:-true}
+      RELAY_FRONTEND_ORIGIN: ${RELAY_FRONTEND_ORIGIN:-http://localhost,http://127.0.0.1}
+      MOCK_WORLD_URL: http://mock-world:9210
+      RELAY_AI_ADAPTER: ${RELAY_AI_ADAPTER:-mock}
+      RELAY_AI_BASE_URL: ${RELAY_AI_BASE_URL:-http://mock-provider:9001/v1}
+      RELAY_AI_MODEL: ${RELAY_AI_MODEL:-alpha-small}
+      RELAY_AI_API_KEY: ${RELAY_AI_API_KEY:-local-mock-key}
+      RELAY_AI_TIMEOUT_SECONDS: ${RELAY_AI_TIMEOUT_SECONDS:-30}
+      RELAY_WORKER_ID: ${RELAY_WORKER_ID:-worker-compose}
+      RELAY_WORKER_ENABLED: "true"
+    ports:
+      - "127.0.0.1:${API_PORT:-8082}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 90s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8081}:80"
+
+volumes:
+  postgres_data:

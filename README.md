@@ -39,7 +39,7 @@ $env:RELAY_AI_MODEL = 'alpha-small'
 $env:RELAY_AI_API_KEY = '<provider or local mock key>'
 $env:RELAY_AI_TIMEOUT_SECONDS = '30'
 .\mvnw.cmd clean package
-java -jar target\relayflow-0.0.1-SNAPSHOT.jar
+java -jar target\relayflow-1.0.0-SNAPSHOT.jar
 ```
 
 AI nodes use an OpenAI-compatible chat-completions endpoint at `<RELAY_AI_BASE_URL>/chat/completions`. For OpenRouter, set `RELAY_AI_BASE_URL=https://openrouter.ai/api/v1`, `RELAY_AI_API_KEY` to your OpenRouter key, and `RELAY_AI_MODEL` to an exact model ID available to your OpenRouter account (for example, `provider/model`). The selected model/provider must support the requested JSON response format and return JSON in the assistant message. Provider calls have a configurable timeout, and credentials are sent only as bearer authentication; prompts and keys are not written to logs or traces. The same HTTP client handles OpenAI-compatible services; no OpenRouter-specific client is required. `RELAY_AI_ADAPTER` is a configuration label and does not currently change the HTTP client behavior. Keep real provider keys in environment variables or the untracked local `keys.env` file only. The app applies `src/main/resources/db/migration` through Flyway and inserts the four canonical seed workflows as Published. Seed inserts are conflict-safe and do not overwrite an existing workflow on restart. Set `RELAY_SEED_ENABLED=false` to disable seed insertion. `SERVER_PORT` overrides the default API port `8080`.
@@ -51,6 +51,44 @@ python scripts/mock_world.py --port 9210
 ```
 
 Spring Boot health is available at `http://localhost:8080/actuator/health`.
+
+### Run with Docker Compose
+
+Docker Desktop (or another Docker Compose v2 installation) is required. Copy the
+example environment file, replace the local database password and demo token,
+then build and start the stack:
+
+```powershell
+Copy-Item docker.env.example docker.env
+# Edit docker.env and replace the example credentials.
+docker compose --env-file docker.env up --build -d
+docker compose --env-file docker.env ps
+```
+
+Open the console at `http://localhost:8081`. The API is also available directly
+at `http://localhost:8082`; the console instead uses the same-origin `/api/`
+Nginx proxy. Both ports are bound to loopback by default. Change
+`FRONTEND_PORT` or `API_PORT` in `docker.env` if those host ports are already in
+use. To stop the containers without deleting the database volume, run:
+
+```powershell
+docker compose --env-file docker.env down
+```
+
+Compose starts PostgreSQL, the mock world, the mock AI provider, and a combined
+Spring Boot API/worker container. Flyway applies migrations on startup, and the
+named PostgreSQL volume preserves database state across container recreation.
+The mock world's ledger and order state are in memory and reset when its
+container is recreated. The bundled mock AI provider returns generic text and
+is not suitable for workflows requiring schema-shaped AI output; configure
+`RELAY_AI_BASE_URL`, `RELAY_AI_API_KEY`, and `RELAY_AI_MODEL` in `docker.env` to
+use an OpenAI-compatible provider instead.
+
+The example token and password are placeholders for local development only.
+Do not expose this demo stack directly to the internet or use these credentials
+in production. Use deployment secrets and a TLS-terminating reverse proxy for
+any hosted deployment. The Docker build excludes `keys.env` and local
+environment files.
 
 ### Workflow authoring API
 
