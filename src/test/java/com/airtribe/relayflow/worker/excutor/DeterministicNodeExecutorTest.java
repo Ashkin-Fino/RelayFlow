@@ -48,6 +48,23 @@ class DeterministicNodeExecutorTest {
     }
 
     @Test
+    void clientErrorIncludesMessageFromJsonResponse() throws IOException {
+        HttpServer server = serverReturning(409,
+            "{\"error\":{\"message\":\"Order ord_7 is already refunded\"}}");
+        try {
+            NodeExecutionException error = assertThrows(NodeExecutionException.class,
+                () -> execute(server.getAddress().getPort()));
+
+            assertFalse(error.isRetryable());
+            assertEquals(409, error.getHttpStatus());
+            assertEquals("HTTP request returned status 409: Order ord_7 is already refunded",
+                error.getMessage());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void refundSendsAmountAndStableIdempotencyKeyAndReturnsWorldOutput() throws IOException {
         AtomicReference<String> path = new AtomicReference<>();
         AtomicReference<String> requestBody = new AtomicReference<>();
@@ -130,9 +147,20 @@ class DeterministicNodeExecutorTest {
     }
 
     private HttpServer serverReturning(int status) throws IOException {
+        return serverReturning(status, "");
+    }
+
+    private HttpServer serverReturning(int status, String body) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/failure", exchange -> {
-            exchange.sendResponseHeaders(status, -1);
+            byte[] response = body.getBytes(StandardCharsets.UTF_8);
+            if (!body.isEmpty()) {
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+            }
+            exchange.sendResponseHeaders(status, response.length);
+            if (response.length > 0) {
+                exchange.getResponseBody().write(response);
+            }
             exchange.close();
         });
         server.start();

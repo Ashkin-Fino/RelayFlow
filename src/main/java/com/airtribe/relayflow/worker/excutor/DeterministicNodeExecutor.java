@@ -289,7 +289,10 @@ public class DeterministicNodeExecutor {
 		if (status < 200 || status >= 300) {
 			boolean retryable = status == 408 || status == 425 || status == 429
 					|| (status >= 500 && status <= 599);
-			throw new NodeExecutionException("HTTP request returned status " + status,
+			String errorMessage = responseErrorMessage(response.body());
+			String message = "HTTP request returned status " + status
+					+ (errorMessage == null ? "" : ": " + errorMessage);
+			throw new NodeExecutionException(message,
 					retryable, status);
 		}
 
@@ -302,5 +305,23 @@ public class DeterministicNodeExecutor {
 		return objectMapper.createObjectNode()
 				.put("status", status)
 				.set("body", responseBody);
+	}
+
+	private String responseErrorMessage(String responseBody) {
+		if (responseBody == null || responseBody.isBlank()) {
+			return null;
+		}
+		try {
+			JsonNode body = objectMapper.readTree(responseBody);
+			JsonNode error = body.path("error");
+			String message = error.isTextual() ? error.asString() : error.path("message").asString(null);
+			if (message == null || message.isBlank()) {
+				message = body.path("message").asString(null);
+			}
+			return message == null || message.isBlank() ? null : message;
+		} catch (JacksonException exception) {
+			String message = responseBody.trim();
+			return message.length() > 500 ? message.substring(0, 500) + "..." : message;
+		}
 	}
 }
