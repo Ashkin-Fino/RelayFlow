@@ -1,0 +1,56 @@
+package com.airtribe.relayflow.api.workflow;
+
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.airtribe.relayflow.api.workflow.dto.WorkflowStatusResponse;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowDetailResponse;
+import com.airtribe.relayflow.api.workflow.dto.WorkflowSummary;
+import com.airtribe.relayflow.api.workflow.service.WorkflowService;
+
+import tools.jackson.databind.JsonNode;
+
+@RestController
+@RequestMapping("/workflows")
+public class WorkflowController {
+	private final WorkflowService workflowService;
+
+	public WorkflowController(WorkflowService workflowService) {
+		this.workflowService = workflowService;
+	}
+
+	@GetMapping
+	public List<WorkflowSummary> list() {
+		return workflowService.list();
+	}
+
+	@GetMapping("/{workflowId}")
+	public WorkflowDetailResponse get(@PathVariable String workflowId) {
+		return workflowService.get(workflowId);
+	}
+
+	@PostMapping
+	public ResponseEntity<WorkflowStatusResponse> create(@RequestBody JsonNode definition) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(workflowService.create(definition));
+	}
+
+	@PutMapping("/{workflowId}")
+	public WorkflowStatusResponse updateDraft(@PathVariable String workflowId,
+			@RequestBody JsonNode definition) {
+		return workflowService.updateDraft(workflowId, definition);
+	}
+
+	@PostMapping("/{workflowId}/publish")
+	public WorkflowStatusResponse publish(@PathVariable String workflowId) {
+		return workflowService.publish(workflowId);
+	}
+}
