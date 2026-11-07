@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,10 @@ import tools.jackson.databind.node.ObjectNode;
 
 @Component
 public class DeterministicNodeExecutor {
+	private static final Pattern EMAIL_ADDRESS = Pattern.compile(
+			"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
+					+ "@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}$");
+
 	private final ObjectMapper objectMapper;
 	private final HttpClient httpClient;
 	private final URI mockWorldUrl;
@@ -160,7 +165,11 @@ public class DeterministicNodeExecutor {
 		String path;
 		if (channel.equals("email")) {
 			path = "/email/send";
-			body.put("to", params.path("to").asString());
+			String recipient = params.path("to").asString();
+			if (recipient.length() > 254 || !EMAIL_ADDRESS.matcher(recipient).matches()) {
+				throw new IllegalStateException("notify email recipient must be a valid email address");
+			}
+			body.put("to", recipient);
 			if (params.has("subject")) {
 				body.set("subject", params.path("subject").deepCopy());
 			}

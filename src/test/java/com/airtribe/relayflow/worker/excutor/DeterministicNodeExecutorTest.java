@@ -2,6 +2,7 @@ package com.airtribe.relayflow.worker.excutor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -134,6 +135,38 @@ class DeterministicNodeExecutorTest {
         }
     }
 
+    @Test
+    void emailNotifyRejectsInvalidRecipientBeforeCallingWorld() throws IOException {
+        AtomicReference<String> path = new AtomicReference<>();
+        HttpServer server = serverCapturing(path, new AtomicReference<>(),
+            new AtomicReference<>(), "{\"delivered\":true}");
+        try {
+            IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> executor(server).execute("run_1", 1, notifyNode(),
+                    mapper.readTree("{\"channel\":\"email\",\"to\":\"invalid-email\",\"message\":\"hello\"}")));
+
+            assertEquals("notify email recipient must be a valid email address", error.getMessage());
+            assertNull(path.get());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void chatNotifyDoesNotValidateRecipientAsEmail() throws IOException {
+        AtomicReference<String> path = new AtomicReference<>();
+        HttpServer server = serverCapturing(path, new AtomicReference<>(),
+            new AtomicReference<>(), "{\"delivered\":true}");
+        try {
+            executor(server).execute("run_1", 1, notifyNode(),
+                mapper.readTree("{\"channel\":\"chat\",\"to\":\"#support\",\"message\":\"hello\"}"));
+
+            assertEquals("/chat/message", path.get());
+        } finally {
+            server.stop(0);
+        }
+    }
+
     private void execute(int port) {
         DeterministicNodeExecutor executor = new DeterministicNodeExecutor(mapper,
             "http://127.0.0.1:" + port);
@@ -194,5 +227,11 @@ class DeterministicNodeExecutorTest {
         return mapper.readTree("""
             {"id":"%s","type":"order_action","next":%s}
             """.formatted(id, nextNode));
+    }
+
+    private JsonNode notifyNode() {
+        return mapper.readTree("""
+            {"id":"notify","type":"notify","next":null}
+            """);
     }
 }
