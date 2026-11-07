@@ -90,7 +90,7 @@ npm install
 npm run dev
 ```
 
-The console uses `http://localhost:8080` by default; set `VITE_API_BASE_URL` before starting Vite to use a different API URL. Enter the configured demo bearer token in the console. The backend's `RELAY_FRONTEND_ORIGIN` setting controls allowed browser origins.
+In development, the console sends API requests through Vite's same-origin `/api` proxy to `http://localhost:8080`, avoiding local CORS configuration. Production builds use `VITE_API_BASE_URL` (typically `/api` behind the Nginx reverse proxy). Enter the configured demo bearer token in the console.
 
 The console includes Overview, Workflows, and Runs pages; workflow JSON and flowchart details; run traces with guarded approval and cancellation actions; and a catalog-driven workflow builder. New workflows are saved as Drafts. Drafts can be edited and published from the console; published definitions remain read-only. Schedule triggers can be authored with a cron expression, but the backend does not yet execute cron schedules.
 

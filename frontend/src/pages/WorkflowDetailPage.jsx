@@ -44,6 +44,7 @@ function WorkflowDetailPage() {
   const canManuallyTrigger = triggerType === 'manual'
   const canTriggerNow = canManuallyTrigger && workflow?.status === 'published'
   const nodeCount = Array.isArray(definition?.nodes) ? definition.nodes.length : 0
+  const triggerPayloadSample = useMemo(() => buildTriggerPayloadSample(definition), [definition])
 
   const triggerLabel = useMemo(
     () => canTriggerNow
@@ -166,6 +167,31 @@ function WorkflowDetailPage() {
             </div>
           </section>
 
+          <section aria-labelledby="trigger-payload-title" className="content-panel trigger-payload-panel">
+            <div className="trigger-payload-heading">
+              <div>
+                <h2 id="trigger-payload-title">Sample trigger payload</h2>
+                <p>
+                  {triggerType === 'webhook'
+                    ? 'Send this JSON as the webhook request body.'
+                    : triggerType === 'manual'
+                      ? 'Use this object as the input when manually triggering the workflow.'
+                      : 'This structure is inferred from the workflow’s trigger.body template references.'}
+                </p>
+              </div>
+            </div>
+            <pre className="trigger-payload-json"><code>{JSON.stringify(triggerPayloadSample.payload, null, 2)}</code></pre>
+            <p className="trigger-payload-note">
+              {triggerPayloadSample.hasReferences
+                ? triggerPayloadSample.omittedArrayIndexes
+                  ? 'Replace the placeholder values with your data. Array paths using indices above 1000 are omitted from this sample.'
+                  : 'Replace the placeholder values with your data.'
+                : triggerPayloadSample.usesWholeBody
+                  ? 'The workflow uses the entire trigger body; add the JSON fields it needs.'
+                  : 'No trigger.body fields are referenced, so an empty object is shown.'}
+            </p>
+          </section>
+
           <section className="content-panel workflow-definition-panel">
             <div className="definition-toolbar">
               <div>
@@ -248,6 +274,83 @@ function WorkflowDetailPage() {
       )}
     </div>
   )
+}
+
+function buildTriggerPayloadSample(definition) {
+  const paths = new Map()
+  let usesWholeBody = false
+
+  function collectPaths(value) {
+    if (typeof value === 'string') {
+      const templatePattern = /\{\{\s*trigger\.body(?:\.([^{}]*?))?\s*\}\}/g
+      let match = templatePattern.exec(value)
+      while (match) {
+        const path = match[1]?.trim()
+        if (path === undefined || path === '') {
+          usesWholeBody = true
+        } else {
+          const segments = path.split('.')
+          if (segments.every((segment) => segment.length > 0)) {
+            paths.set(JSON.stringify(segments), segments)
+          }
+        }
+        match = templatePattern.exec(value)
+      }
+    } else if (Array.isArray(value)) {
+      value.forEach(collectPaths)
+    } else if (value && typeof value === 'object') {
+      Object.values(value).forEach(collectPaths)
+    }
+  }
+
+  collectPaths(definition)
+  const payload = {}
+  let omittedArrayIndexes = false
+
+  function isArrayIndex(segment) {
+    return /^(0|[1-9]\d*)$/.test(segment) && Number.isSafeInteger(Number(segment))
+  }
+
+  function insertPath(container, segments, offset) {
+    const segment = segments[offset]
+    const isLast = offset === segments.length - 1
+    const value = isLast ? '<value>' : (isArrayIndex(segments[offset + 1]) ? [] : {})
+
+    if (Array.isArray(container)) {
+      if (!isArrayIndex(segment)) return
+      const index = Number(segment)
+      if (index > 1000) {
+        omittedArrayIndexes = true
+        return
+      }
+      if (isLast) {
+        if (container[index] === undefined) container[index] = value
+        return
+      }
+      if (!container[index] || typeof container[index] !== 'object') {
+        container[index] = value
+      }
+      insertPath(container[index], segments, offset + 1)
+      return
+    }
+
+    if (isLast) {
+      if (container[segment] === undefined) container[segment] = value
+      return
+    }
+    if (!container[segment] || typeof container[segment] !== 'object') {
+      container[segment] = value
+    }
+    insertPath(container[segment], segments, offset + 1)
+  }
+
+  paths.forEach((segments) => insertPath(payload, segments, 0))
+  return {
+    payload,
+    hasReferences: paths.size > 0,
+    usesWholeBody,
+    omittedArrayIndexes,
+  }
 }
 
 function MetaItem({ label, value, mono }) {

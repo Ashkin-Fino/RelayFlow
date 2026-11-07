@@ -6,16 +6,17 @@ worker, the mock world, or the AI provider.
 
 ## Local setup
 
-1. Copy `.env.example` to `.env.local` and set `VITE_API_BASE_URL` to the API
-   origin (default: `http://localhost:8080`).
-2. Configure the backend's `RELAY_FRONTEND_ORIGIN` to match the console's
-   origin (defaults allow `http://localhost:5173` and
-   `http://127.0.0.1:5173`; multiple origins may be comma-separated) so the API
-   permits browser requests from this console.
+1. Copy `.env.example` to `.env.local`.
+2. Ensure the backend is running at `http://localhost:8080`.
 3. Install dependencies with `npm install`.
 4. Start the development server with `npm run dev`.
-5. Enter the demo bearer token configured through `RELAY_DEMO_TOKEN` when the
-   console prompts for it.
+5. Open the Vite URL (usually `http://localhost:5173`) and enter the demo
+   bearer token configured through `RELAY_DEMO_TOKEN` when prompted.
+
+In development, the console sends API requests through Vite's same-origin
+`/api` proxy, which forwards them to `http://localhost:8080`. This avoids
+browser CORS configuration for local development. Production builds use
+`VITE_API_BASE_URL` (typically `/api` behind the Nginx reverse proxy).
 
 The token is held in browser session storage for the current tab session and is
 not committed or logged. Use **Change API token** in the navigation rail to

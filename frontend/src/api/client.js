@@ -1,4 +1,6 @@
-const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const configuredBaseUrl = import.meta.env.DEV
+  ? '/api'
+  : import.meta.env.VITE_API_BASE_URL || '/api'
 const baseUrl = configuredBaseUrl.replace(/\/+$/, '')
 let apiToken = window.sessionStorage.getItem('relay.demoToken') ?? ''
 
